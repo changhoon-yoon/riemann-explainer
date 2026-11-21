@@ -1,0 +1,1063 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>리만가설, 뭐가 풀린 걸까? · 중학생용 애니메이션</title>
+<style>
+:root{
+  color-scheme: light;
+  --page:#f9f9f7; --surface:#fcfcfb; --cell:#f0efec;
+  --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10);
+  --s1:#2a78d6; --s2:#eb6834;
+  --good:#0ca30c; --goodtext:#006300; --warn:#fab219; --crit:#d03b3b;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19; --cell:#2c2c2a;
+    --ink:#f0efec; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+    --s1:#3987e5; --s2:#d95926;
+    --good:#0ca30c; --goodtext:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","Malgun Gothic","Apple SD Gothic Neo",sans-serif;line-height:1.6}
+.app{max-width:980px;margin:0 auto;padding:20px 16px 28px}
+header{display:flex;align-items:baseline;gap:12px;margin-bottom:10px}
+.step{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+h1{font-size:22px;margin:0;font-weight:700;letter-spacing:-.01em}
+.stage{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+#svg{display:block;width:100%;height:auto}
+#html{display:none;padding:28px 30px}
+.stage.html-mode #svg{display:none}
+.stage.html-mode #html{display:block}
+.captions{min-height:205px;margin:14px 2px 8px;font-size:17px}
+.cap{margin:0 0 6px;opacity:0;transform:translateY(6px);transition:opacity .45s,transform .45s,color .45s}
+.cap.in{opacity:1;transform:none}
+.cap.old{color:var(--ink2)}
+nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+button{font:inherit;font-size:15px;border:1px solid var(--border);background:var(--surface);color:var(--ink);
+  border-radius:10px;padding:8px 14px;cursor:pointer}
+button:hover{background:var(--cell)}
+button.primary{background:var(--s1);border-color:var(--s1);color:#fff}
+button.primary:hover{filter:brightness(1.08)}
+button:disabled{opacity:.4;cursor:default}
+button.on{border-color:var(--s1);color:var(--s1)}
+.dots{display:flex;gap:6px;flex:1;justify-content:center;flex-wrap:wrap}
+.dot{width:10px;height:10px;border-radius:5px;background:var(--axis);border:none;padding:0;transition:width .25s}
+.dot:hover{background:var(--muted)}
+.dot.on{background:var(--s1);width:24px}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--border);
+  box-shadow:0 4px 16px rgba(0,0,0,.14);border-radius:8px;padding:6px 10px;font-size:13px;line-height:1.55;
+  opacity:0;transition:opacity .12s;white-space:nowrap;z-index:5;left:0;top:0}
+.tip.show{opacity:1}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
+footer{margin-top:16px;font-size:12px;color:var(--muted)}
+
+/* svg */
+#svg *{pointer-events:none}
+#svg .hit{pointer-events:all;cursor:crosshair}
+#svg text{font-family:inherit}
+.tick{font-size:12px;fill:var(--muted);font-variant-numeric:tabular-nums}
+.lbl{font-size:14px;fill:var(--ink2)}
+.lbl-ink{font-size:14px;fill:var(--ink)}
+.lbl-b{font-size:15px;fill:var(--ink);font-weight:700}
+.big{font-size:26px;fill:var(--ink);font-weight:800}
+.formula{font-size:20px;fill:var(--ink);font-variant-numeric:tabular-nums}
+.grid{stroke:var(--grid);stroke-width:1}
+.axis{stroke:var(--axis);stroke-width:1}
+.axis-strong{stroke:var(--muted);stroke-width:1.2}
+.xhair{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3}
+.xmark{stroke:var(--surface);stroke-width:2}
+.line-s1{fill:none;stroke:var(--s1);stroke-width:2;stroke-linejoin:round}
+.line-s2{fill:none;stroke:var(--s2);stroke-width:2;stroke-linejoin:round}
+.fill-s1{fill:var(--s1)} .fill-s2{fill:var(--s2)}
+.dot-s1{fill:var(--s1);stroke:var(--surface);stroke-width:2}
+.dot-muted{fill:var(--muted);stroke:var(--surface);stroke-width:2}
+.dot-crit{fill:var(--crit);stroke:var(--surface);stroke-width:2}
+.cellbg{fill:var(--cell);transition:fill .3s}
+.celltext{font-size:20px;fill:var(--ink);font-weight:600;transition:fill .3s}
+.cell.prime .cellbg{fill:var(--s1)}
+.cell.prime .celltext{fill:#fff}
+.cell.gone .cellbg{fill:var(--surface)}
+.cell.gone .celltext{fill:var(--muted);font-weight:400}
+.strike{stroke:var(--muted);stroke-width:1.5}
+.ring{fill:none;stroke:var(--s2);stroke-width:3}
+.bracket{fill:none;stroke:var(--s2);stroke-width:2}
+.target{stroke:var(--ink2);stroke-width:1.5;stroke-dasharray:5 4}
+.critline{stroke:var(--s1);stroke-width:2;stroke-dasharray:7 5}
+.strip{fill:var(--s1);opacity:.10}
+.panel{fill:var(--surface);stroke:var(--border);stroke-width:1}
+.panel-soft{fill:var(--cell)}
+.codebar{fill:var(--axis)}
+.check{fill:var(--good);font-weight:800;font-size:15px}
+.goodtext{fill:var(--goodtext);font-weight:700}
+.crittext{fill:var(--crit);font-weight:800}
+
+/* html scenes */
+.cover{display:flex;gap:24px;align-items:center;min-height:384px}
+.cover-text{flex:1}
+.kicker{font-size:13px;color:var(--muted);margin-bottom:6px}
+.cover h2{font-size:38px;line-height:1.25;margin:0 0 14px;letter-spacing:-.02em}
+.cover p{font-size:17px;color:var(--ink2);margin:0 0 18px;max-width:520px}
+.cover .hint{font-size:13px;color:var(--muted);margin-top:14px}
+.cover-art{width:200px;height:320px;flex:none}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.card{border:1px solid var(--border);border-top-width:4px;border-radius:12px;padding:14px 16px;background:var(--surface);
+  opacity:0;transform:translateY(8px);transition:opacity .5s,transform .5s}
+.card.in{opacity:1;transform:none}
+.card h3{margin:0 0 8px;font-size:17px;display:flex;align-items:center;gap:8px}
+.card ul{margin:0;padding-left:18px;font-size:14.5px;color:var(--ink2)}
+.card li{margin-bottom:7px}
+.card li b{color:var(--ink)}
+.card.good{border-top-color:var(--good)}
+.card.wait{border-top-color:var(--warn)}
+.card.bad{border-top-color:var(--crit)}
+.ico{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;color:#fff;font-size:14px;font-weight:800}
+.good .ico{background:var(--good)} .wait .ico{background:var(--warn);color:#0b0b0b} .bad .ico{background:var(--crit)}
+.oneliner{margin:18px 0 0;padding:14px 18px;border-radius:12px;background:var(--cell);font-size:17px;
+  opacity:0;transition:opacity .6s}
+.oneliner.in{opacity:1}
+.sources{margin-top:16px;font-size:12.5px;color:var(--muted)}
+.sources a{color:var(--s1)}
+@media (max-width:760px){
+  .cards{grid-template-columns:1fr}
+  .cover{flex-direction:column;align-items:flex-start}
+  .cover-art{display:none}
+  .cover h2{font-size:30px}
+  .captions{font-size:16px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><span class="step" id="step"></span><h1 id="title"></h1></header>
+  <section class="stage" id="stage">
+    <svg id="svg" viewBox="0 0 900 440" role="img" aria-label="애니메이션 그림"></svg>
+    <div id="html"></div>
+    <div class="tip" id="tip"></div>
+  </section>
+  <section class="captions" id="captions" aria-live="polite"></section>
+  <nav>
+    <button id="prev">← 이전</button>
+    <button id="replay" title="이 단계 다시 보기">↻ 다시 보기</button>
+    <div class="dots" id="dots"></div>
+    <button id="auto" title="단계가 끝나면 자동으로 다음으로">▶ 자동 재생</button>
+    <button id="next" class="primary">다음 →</button>
+  </nav>
+  <footer>2026년 11월 22일 기준 · 보도와 원문(알푀게의 노트, Lean 커뮤니티 발표)을 바탕으로 만든 설명 자료예요. 그래프의 영점·제타 값은 mpmath로 직접 계산한 실제 값이에요.</footer>
+</div>
+
+<script>
+const DATA = {"zeros":[14.134725,21.02204,25.010858,30.424876,32.935062,37.586178,40.918719,43.327073,48.005151,49.773832,52.970321,56.446248,59.347044,60.831779,65.112544,67.079811,69.546402,72.067158,75.704691,77.14484,79.337375,82.910381,84.735493,87.425275,88.809111,92.491899,94.651344,95.870634,98.831194,101.317851,103.725538,105.446623,107.168611,111.029536,111.874659,114.320221,116.22668,118.790783,121.370125,122.946829,124.256819,127.516684,129.578704,131.087689,133.497737,134.75651,138.116042,139.736209,141.123707,143.111846,146.000982,147.422765,150.05352,150.925258,153.024694,156.112909,157.597592,158.849988,161.188964,163.03071,165.537069,167.18444,169.094515,169.911976,173.411537,174.754192,176.441434,178.377408,179.916484,182.207078,184.874468,185.598784,187.228923,189.416159,192.026656,193.079727,195.265397,196.876482,198.01531,201.264752,202.493595,204.189672,205.394697,207.906259,209.57651,211.690863,213.347919,214.547045,216.169539,219.067596,220.714919,221.430706,224.007,224.983325,227.421444,229.337413,231.250189,231.987235,233.693404,236.52423],"Z":[[0.0,-1.4604],[0.1,-1.4338],[0.2,-1.3628],[0.3,-1.2665],[0.4,-1.1635],[0.5,-1.0653],[0.6,-0.9776],[0.7,-0.9016],[0.8,-0.8369],[0.9,-0.7823],[1.0,-0.7363],[1.1,-0.6976],[1.2,-0.6651],[1.3,-0.6377],[1.4,-0.6148],[1.5,-0.5956],[1.6,-0.5795],[1.7,-0.5663],[1.8,-0.5554],[1.9,-0.5466],[2.0,-0.5396],[2.1,-0.5343],[2.2,-0.5305],[2.3,-0.5279],[2.4,-0.5266],[2.5,-0.5263],[2.6,-0.527],[2.7,-0.5287],[2.8,-0.5312],[2.9,-0.5345],[3.0,-0.5385],[3.1,-0.5433],[3.2,-0.5488],[3.3,-0.5549],[3.4,-0.5616],[3.5,-0.5689],[3.6,-0.5767],[3.7,-0.5852],[3.8,-0.5941],[3.9,-0.6036],[4.0,-0.6136],[4.1,-0.6241],[4.2,-0.635],[4.3,-0.6465],[4.4,-0.6583],[4.5,-0.6707],[4.6,-0.6835],[4.7,-0.6967],[4.8,-0.7103],[4.9,-0.7244],[5.0,-0.7389],[5.1,-0.7537],[5.2,-0.769],[5.3,-0.7846],[5.4,-0.8006],[5.5,-0.817],[5.6,-0.8337],[5.7,-0.8507],[5.8,-0.8681],[5.9,-0.8857],[6.0,-0.9037],[6.1,-0.9219],[6.2,-0.9405],[6.3,-0.9592],[6.4,-0.9782],[6.5,-0.9973],[6.6,-1.0167],[6.7,-1.0362],[6.8,-1.0559],[6.9,-1.0757],[7.0,-1.0956],[7.1,-1.1155],[7.2,-1.1355],[7.3,-1.1555],[7.4,-1.1754],[7.5,-1.1954],[7.6,-1.2152],[7.7,-1.2349],[7.8,-1.2544],[7.9,-1.2737],[8.0,-1.2928],[8.1,-1.3116],[8.2,-1.33],[8.3,-1.3481],[8.4,-1.3658],[8.5,-1.383],[8.6,-1.3997],[8.7,-1.4158],[8.8,-1.4313],[8.9,-1.4462],[9.0,-1.4603],[9.1,-1.4736],[9.2,-1.4861],[9.3,-1.4978],[9.4,-1.5084],[9.5,-1.5181],[9.6,-1.5267],[9.7,-1.5342],[9.8,-1.5404],[9.9,-1.5455],[10.0,-1.5492],[10.1,-1.5515],[10.2,-1.5525],[10.3,-1.5519],[10.4,-1.5498],[10.5,-1.546],[10.6,-1.5406],[10.7,-1.5335],[10.8,-1.5245],[10.9,-1.5137],[11.0,-1.5011],[11.1,-1.4865],[11.2,-1.4698],[11.3,-1.4512],[11.4,-1.4304],[11.5,-1.4075],[11.6,-1.3825],[11.7,-1.3552],[11.8,-1.3257],[11.9,-1.294],[12.0,-1.2599],[12.1,-1.2235],[12.2,-1.1848],[12.3,-1.1438],[12.4,-1.1004],[12.5,-1.0546],[12.6,-1.0066],[12.7,-0.9561],[12.8,-0.9034],[12.9,-0.8484],[13.0,-0.7911],[13.1,-0.7317],[13.2,-0.67],[13.3,-0.6062],[13.4,-0.5403],[13.5,-0.4724],[13.6,-0.4026],[13.7,-0.3309],[13.8,-0.2575],[13.9,-0.1823],[14.0,-0.1056],[14.1,-0.0275],[14.2,0.052],[14.3,0.1328],[14.4,0.2146],[14.5,0.2974],[14.6,0.3809],[14.7,0.4651],[14.8,0.5498],[14.9,0.6348],[15.0,0.7199],[15.1,0.805],[15.2,0.8899],[15.3,0.9743],[15.4,1.0582],[15.5,1.1412],[15.6,1.2232],[15.7,1.3039],[15.8,1.3832],[15.9,1.4608],[16.0,1.5365],[16.1,1.6102],[16.2,1.6815],[16.3,1.7503],[16.4,1.8163],[16.5,1.8794],[16.6,1.9392],[16.7,1.9957],[16.8,2.0486],[16.9,2.0976],[17.0,2.1427],[17.1,2.1836],[17.2,2.2201],[17.3,2.2521],[17.4,2.2794],[17.5,2.3018],[17.6,2.3193],[17.7,2.3316],[17.8,2.3387],[17.9,2.3405],[18.0,2.3368],[18.1,2.3276],[18.2,2.3129],[18.3,2.2926],[18.4,2.2667],[18.5,2.2352],[18.6,2.198],[18.7,2.1554],[18.8,2.1072],[18.9,2.0535],[19.0,1.9946],[19.1,1.9304],[19.2,1.8612],[19.3,1.787],[19.4,1.7081],[19.5,1.6246],[19.6,1.5369],[19.7,1.445],[19.8,1.3494],[19.9,1.2502],[20.0,1.1478],[20.1,1.0425],[20.2,0.9347],[20.3,0.8246],[20.4,0.7127],[20.5,0.5993],[20.6,0.4849],[20.7,0.3698],[20.8,0.2546],[20.9,0.1395],[21.0,0.0251],[21.1,-0.0882],[21.2,-0.2],[21.3,-0.3097],[21.4,-0.417],[21.5,-0.5214],[21.6,-0.6224],[21.7,-0.7196],[21.8,-0.8125],[21.9,-0.9008],[22.0,-0.9839],[22.1,-1.0615],[22.2,-1.1333],[22.3,-1.1987],[22.4,-1.2576],[22.5,-1.3094],[22.6,-1.3541],[22.7,-1.3911],[22.8,-1.4204],[22.9,-1.4416],[23.0,-1.4546],[23.1,-1.4593],[23.2,-1.4554],[23.3,-1.4429],[23.4,-1.4218],[23.5,-1.392],[23.6,-1.3535],[23.7,-1.3065],[23.8,-1.251],[23.9,-1.1871],[24.0,-1.1151],[24.1,-1.0351],[24.2,-0.9475],[24.3,-0.8525],[24.4,-0.7505],[24.5,-0.6419],[24.6,-0.527],[24.7,-0.4063],[24.8,-0.2804],[24.9,-0.1497],[25.0,-0.0149],[25.1,0.1236],[25.2,0.2651],[25.3,0.409],[25.4,0.5546],[25.5,0.7013],[25.6,0.8483],[25.7,0.9951],[25.8,1.1407],[25.9,1.2847],[26.0,1.4262],[26.1,1.5646],[26.2,1.6991],[26.3,1.8291],[26.4,1.9539],[26.5,2.0729],[26.6,2.1853],[26.7,2.2906],[26.8,2.3883],[26.9,2.4778],[27.0,2.5585],[27.1,2.6301],[27.2,2.6921],[27.3,2.7441],[27.4,2.7858],[27.5,2.8169],[27.6,2.8373],[27.7,2.8468],[27.8,2.8452],[27.9,2.8326],[28.0,2.8089],[28.1,2.7744],[28.2,2.729],[28.3,2.673],[28.4,2.6068],[28.5,2.5306],[28.6,2.4449],[28.7,2.3501],[28.8,2.2468],[28.9,2.1354],[29.0,2.0167],[29.1,1.8914],[29.2,1.7601],[29.3,1.6237],[29.4,1.4829],[29.5,1.3386],[29.6,1.1917],[29.7,1.043],[29.8,0.8936],[29.9,0.7443],[30.0,0.596],[30.1,0.4498],[30.2,0.3065],[30.3,0.1672],[30.4,0.0326],[30.5,-0.0962],[30.6,-0.2185],[30.7,-0.3333],[30.8,-0.44],[30.9,-0.5376],[31.0,-0.6256],[31.1,-0.7033],[31.2,-0.7702],[31.3,-0.8256],[31.4,-0.8692],[31.5,-0.9005],[31.6,-0.9194],[31.7,-0.9255],[31.8,-0.9188],[31.9,-0.8992],[32.0,-0.8668],[32.1,-0.8217],[32.2,-0.7641],[32.3,-0.6943],[32.4,-0.6127],[32.5,-0.5198],[32.6,-0.4163],[32.7,-0.3026],[32.8,-0.1796],[32.9,-0.048],[33.0,0.0913],[33.1,0.2373],[33.2,0.3891],[33.3,0.5456],[33.4,0.7058],[33.5,0.8685],[33.6,1.0326],[33.7,1.1968],[33.8,1.3601],[33.9,1.5212],[34.0,1.6789],[34.1,1.8321],[34.2,1.9795],[34.3,2.12],[34.4,2.2526],[34.5,2.3762],[34.6,2.4898],[34.7,2.5925],[34.8,2.6833],[34.9,2.7615],[35.0,2.8265],[35.1,2.8775],[35.2,2.9141],[35.3,2.9358],[35.4,2.9424],[35.5,2.9335],[35.6,2.9092],[35.7,2.8694],[35.8,2.8143],[35.9,2.7441],[36.0,2.6592],[36.1,2.56],[36.2,2.4471],[36.3,2.3213],[36.4,2.1832],[36.5,2.0338],[36.6,1.8741],[36.7,1.7051],[36.8,1.528],[36.9,1.3439],[37.0,1.1542],[37.1,0.9602],[37.2,0.7631],[37.3,0.5645],[37.4,0.3657],[37.5,0.1682],[37.6,-0.0267],[37.7,-0.2176],[37.8,-0.403],[37.9,-0.5816],[38.0,-0.7522],[38.1,-0.9135],[38.2,-1.0644],[38.3,-1.2037],[38.4,-1.3305],[38.5,-1.444],[38.6,-1.5432],[38.7,-1.6276],[38.8,-1.6966],[38.9,-1.7498],[39.0,-1.787],[39.1,-1.8078],[39.2,-1.8125],[39.3,-1.801],[39.4,-1.7736],[39.5,-1.7309],[39.6,-1.6732],[39.7,-1.6013],[39.8,-1.5159],[39.9,-1.4181],[40.0,-1.3089],[40.1,-1.1893],[40.2,-1.0607],[40.3,-0.9244],[40.4,-0.7819],[40.5,-0.6345],[40.6,-0.4838],[40.7,-0.3314],[40.8,-0.1789],[40.9,-0.028],[41.0,0.1199],[41.1,0.263],[41.2,0.3999],[41.3,0.5289],[41.4,0.6487],[41.5,0.7579],[41.6,0.8551],[41.7,0.9392],[41.8,1.0091],[41.9,1.0638],[42.0,1.1025],[42.1,1.1244],[42.2,1.1292],[42.3,1.1162],[42.4,1.0855],[42.5,1.0368],[42.6,0.9702],[42.7,0.8862],[42.8,0.785],[42.9,0.6674],[43.0,0.534],[43.1,0.3857],[43.2,0.2238],[43.3,0.0492],[43.4,-0.1365],[43.5,-0.332],[43.6,-0.5357],[43.7,-0.746],[43.8,-0.9611],[43.9,-1.1792],[44.0,-1.3985],[44.1,-1.6172],[44.2,-1.8333],[44.3,-2.0451],[44.4,-2.2505],[44.5,-2.448],[44.6,-2.6356],[44.7,-2.8118],[44.8,-2.9749],[44.9,-3.1235],[45.0,-3.2563],[45.1,-3.372],[45.2,-3.4696],[45.3,-3.5482],[45.4,-3.607],[45.5,-3.6456],[45.6,-3.6635],[45.7,-3.6606],[45.8,-3.6369],[45.9,-3.5927],[46.0,-3.5283],[46.1,-3.4443],[46.2,-3.3416],[46.3,-3.2212],[46.4,-3.084],[46.5,-2.9316],[46.6,-2.7653],[46.7,-2.5866],[46.8,-2.3974],[46.9,-2.1994],[47.0,-1.9946],[47.1,-1.7848],[47.2,-1.5721],[47.3,-1.3586],[47.4,-1.1463],[47.5,-0.9372],[47.6,-0.7334],[47.7,-0.5368],[47.8,-0.3492],[47.9,-0.1724],[48.0,-0.0081],[48.1,0.1422],[48.2,0.2771],[48.3,0.3954],[48.4,0.496],[48.5,0.5782],[48.6,0.6413],[48.7,0.6848],[48.8,0.7085],[48.9,0.7125],[49.0,0.6968],[49.1,0.6621],[49.2,0.6089],[49.3,0.538],[49.4,0.4505],[49.5,0.3478],[49.6,0.2311],[49.7,0.1021],[49.8,-0.0374],[49.9,-0.1857],[50.0,-0.3407],[50.1,-0.5004],[50.2,-0.6627],[50.3,-0.8253],[50.4,-0.9861],[50.5,-1.1429],[50.6,-1.2935],[50.7,-1.4359],[50.8,-1.568],[50.9,-1.6879],[51.0,-1.7937],[51.1,-1.8839],[51.2,-1.9569],[51.3,-2.0114],[51.4,-2.0464],[51.5,-2.0608],[51.6,-2.0541],[51.7,-2.0257],[51.8,-1.9756],[51.9,-1.9037],[52.0,-1.8103],[52.1,-1.696],[52.2,-1.5616],[52.3,-1.408],[52.4,-1.2366],[52.5,-1.0488],[52.6,-0.8462],[52.7,-0.6307],[52.8,-0.4044],[52.9,-0.1693],[53.0,0.0722],[53.1,0.3178],[53.2,0.5651],[53.3,0.8115],[53.4,1.0546],[53.5,1.2918],[53.6,1.5208],[53.7,1.7391],[53.8,1.9445],[53.9,2.1348],[54.0,2.308],[54.1,2.4623],[54.2,2.5959],[54.3,2.7076],[54.4,2.796],[54.5,2.8602],[54.6,2.8995],[54.7,2.9135],[54.8,2.902],[54.9,2.8651],[55.0,2.8033],[55.1,2.7171],[55.2,2.6076],[55.3,2.4759],[55.4,2.3235],[55.5,2.1519],[55.6,1.9632],[55.7,1.7594],[55.8,1.5426],[55.9,1.3153],[56.0,1.08],[56.1,0.8392],[56.2,0.5955],[56.3,0.3516],[56.4,0.1101],[56.5,-0.1263],[56.6,-0.3552],[56.7,-0.5742],[56.8,-0.7809],[56.9,-0.9732],[57.0,-1.1493],[57.1,-1.3072],[57.2,-1.4457],[57.3,-1.5633],[57.4,-1.6591],[57.5,-1.7325],[57.6,-1.783],[57.7,-1.8105],[57.8,-1.8151],[57.9,-1.7974],[58.0,-1.7581],[58.1,-1.6983],[58.2,-1.6193],[58.3,-1.5226],[58.4,-1.4101],[58.5,-1.2838],[58.6,-1.1458],[58.7,-0.9987],[58.8,-0.8448],[58.9,-0.6867],[59.0,-0.5272],[59.1,-0.3689],[59.2,-0.2145],[59.3,-0.0666],[59.4,0.0722],[59.5,0.1994],[59.6,0.3127],[59.7,0.4099],[59.8,0.4891],[59.9,0.5486],[60.0,0.587]]};
+const HEAT = {"ns":121,"nt":401,"s0":-1.0,"s1":2.0,"t0":0.0,"t1":40.0,"lo":-2.0,"hi":1.2,"b64":"SUtNTlBSU1VXWFpbXV5gYWNkZmhpa2xub3Byc3V2eHl7fX6AgYOEhoeJi4yOkJGTlZaYmpyeoKKkpqiqrK+xtLe5vL/DxsrO09je5e34///////68erk39vX1NHPzMrIx8XDwsG/vr28u7q5uLe3trW1tLOzsrKxsUpLTU9QUlNVV1haW11eYGJjZWZoaWtsbm9wcnN1dnh5e3x+gIGDhIaHiYqMjo+Rk5SWmJqcnZ+ho6WnqqyusbO2uLu+wcTIy8/T2Nzh5uru7+/s6eXh3trX1NLPzcvJx8bEw8HAv769vLu6ubi3tra1tLSzs7KxsbBKTE1PUVJUVVdZWlxdX2BiY2VmaGlrbG5vcHJzdXZ4eXt8fn+BgoSFh4mKjI2PkZKUlpeZm52eoKKkpqiqrK6xs7W4ur2/wsTHyszP0dPV1tfX19bV1NLRz83MysnHxsTDwsC/vr28u7q5ubi3tra1tLSzs7KxsbCwS0xOUFFTVFZXWVpcXV9gYmNlZmhpa2xub3Byc3V2eHl7fH5/gIKDhYaIiYuNjpCRk5SWmJmbnZ+goqSmqKmrra+xs7W3ubu9v8HCxMXHyMnJysrKycnIyMfGxcTDwsHAv769vLy7urm4uLe2trW0tLOzsrKxsbCwr0xNT1BSVFVXWFpbXF5fYWJkZWdoaWtsbm9wcnN1dnh5enx9f4CBg4SGh4mKjI2PkJKTlZaYmZudnqCho6WmqKqrra6wsrO1tri5uru9vr6/wMDAwMDAwMDAv7++vr28vLu6urm4uLe3trW1tLSzs7KysbGwsLCvr65NTlBRU1RWV1laXF1eYGFjZGVnaGprbG5vcXJzdXZ3eXp7fX6AgYKEhYaIiYuMjY+QkpOVlpeZmpydn6Cio6Smp6mqq62ur7Cys7S1tra3uLi5ubm5urq5ubm5ubi4uLe3t7a2tbW0tLOzs7KysbGwsLCvr6+urq6tTlBRU1RVV1haW1xeX2BiY2VmZ2lqa21ub3Fyc3R2d3h6e3x+f4CCg4SGh4iKi4yOj5CRk5SVl5iZm5ydn6ChoqSlpqeoqaqrrK2ur7CwsbKys7OztLS0tLS0tLS0tLSzs7OzsrKysbGxsbCwsK+vr66urq2tra2srFBRU1RVV1hZW1xdX2BhYmRlZmhpamxtbm9xcnN0dnd4eXt8fX6AgYKDhYaHiIqLjI2PkJGSlJWWl5iZm5ydnp+goaKjpKWmp6ipqqqrrKytra6ur6+vr6+wsLCwsLCwsLCvr6+vr6+urq6urq2tra2srKysrKurq6tRU1RVV1hZWlxdXl9hYmNkZmdoaWtsbW5vcXJzdHZ3eHl6fH1+f4CBg4SFhoeJiouMjY6PkZKTlJWWl5iZmpucnZ6foKGio6Okpaamp6ioqamqqqqrq6usrKysrKysrKysrKysrKysrKysrKurq6urq6qqqqqqqqmpU1RVV1hZWlxdXl9gYmNkZWZnaWprbG1vcHFyc3R1d3h5ent8fX+AgYKDhIWGh4iKi4yNjo+QkZKTlJWWl5iZmpubnJ2en5+goaKio6OkpaWmpqanp6ioqKipqampqampqaqqqqqqqqqpqampqampqampqamoqKioqFVWV1hZWlxdXl9gYWJkZWZnaGlqa21ub3BxcnN0dXZ4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5eYmZqbm5ydnZ6fn6CgoaKio6OjpKSkpaWlpqampqanp6enp6enp6enp6enp6enp6enp6enp6enp6dWV1haW1xdXl9gYWJjZGZnaGlqa2xtbm9wcXJzdHV2d3l6e3x9fn+AgYKDhIWFhoeIiYqLjI2Oj5CQkZKTlJWVlpeYmJmampucnJ2dnp6fn6CgoaGhoqKio6OjpKSkpKSlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW9wcXJzc3R1dnd4eXp7fH1+f4CBgoOEhYaGh4iJiouMjI2Oj5CQkZKTk5SVlpaXmJiZmZqbm5ycnZ2dnp6fn5+goKChoaGioqKioqOjo6Ojo6OjpKSkpKSkpKSkpKSkpKSkpFpbXF1dXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd3eHl6e3x9fn+AgIGCg4SFhoaHiImKi4uMjY6Oj5CRkZKTk5SVlZaWl5eYmZmampubm5ycnZ2dnp6en5+foKCgoKChoaGhoaGioqKioqKioqKio6Ojo6Ojo6NbXF1eX2BhYmNkZGVmZ2hpamtsbW5vb3BxcnN0dXZ3eHh5ent8fX5+f4CBgoODhIWGh4eIiYqKi4yMjY6Pj5CRkZKSk5SUlZWWlpeXmJiZmZqampubnJycnZ2dnp6enp+fn5+foKCgoKCgoKGhoaGhoaGhoaGhoaKiXV5fX2BhYmNkZWZmZ2hpamtsbW1ub3BxcnNzdHV2d3h5eXp7fH19fn+AgYGCg4SEhYaHh4iJiYqLi4yNjY6Pj5CRkZKSk5OUlJWVlpaXl5iYmJmZmpqam5ubnJycnJ2dnZ2enp6enp+fn5+fn5+goKCgoKCgoKCgoF5fYGFiY2NkZWZnaGhpamtsbW1ub3BxcXJzdHV1dnd4eXl6e3x9fX5/gICBgoKDhIWFhoeHiImJiouLjIyNjo6Pj5CRkZKSk5OUlJWVlZaWl5eXmJiZmZmampqbm5ubnJycnJ2dnZ2dnp6enp6enp+fn5+fn5+fn59gYWJiY2RlZmZnaGlpamtsbW1ub3BxcXJzdHR1dnd3eHl6ent8fX1+f3+AgYGCg4SEhYaGh4eIiYmKi4uMjI2Njo6PkJCRkZKSkpOTlJSVlZWWlpeXl5iYmJmZmZqampqbm5ubnJycnJydnZ2dnZ2dnp6enp6enp6fYmJjZGVlZmdoaGlqa2tsbW5ub3BwcXJzc3R1dnZ3eHh5ent7fH19fn9/gIGBgoODhIWFhoaHiIiJiYqKi4yMjY2Ojo+PkJCRkZKSkpOTlJSUlZWWlpaXl5eYmJiYmZmZmpqampqbm5ubm5ycnJycnJ2dnZ2dnZ2enmNkZGVmZ2doaWlqa2xsbW5ub3BxcXJzc3R1dXZ3d3h5eXp7e3x9fX5/f4CBgYKCg4SEhYWGh4eIiImJioqLjIyNjY6Ojo+PkJCRkZKSkpOTlJSUlZWVlpaWl5eXl5iYmJmZmZmZmpqampubm5ubm5ycnJycnJydnZ1lZWZnZ2hpaWpra2xtbW5vb3BxcXJzc3R1dXZ3d3h5eXp7e3x8fX5+f3+AgYGCgoOEhIWFhoaHh4iIiYqKi4uMjIyNjY6Oj4+QkJCRkZKSkpOTk5SUlJWVlZaWlpeXl5eYmJiYmZmZmZmampqampubm5ubm5ycnJycZmdnaGlpamtrbG1tbm5vcHBxcnJzdHR1dXZ3d3h4eXp6e3x8fX1+fn+AgIGBgoKDhISFhYaGh4eIiImJioqLi4yMjI2Njo6Pj4+QkJGRkZKSkpOTk5SUlJWVlZaWlpaXl5eXmJiYmJmZmZmZmpqampqam5ubm5ubm2hoaWlqa2tsbG1ubm9wcHFxcnNzdHR1dnZ3d3h4eXp6e3t8fX1+fn9/gICBgYKDg4SEhYWGhoeHiIiJiYmKiouLjIyNjY2Ojo+Pj5CQkJGRkZKSkpOTk5SUlJWVlZWWlpaWl5eXl5iYmJiYmZmZmZmampqampqbm5tpampra2xtbW5ub29wcXFycnN0dHV1dnZ3d3h5eXp6e3t8fH19fn9/gICBgYKCg4OEhIWFhoaHh4eIiImJioqLi4uMjI2NjY6Oj4+PkJCQkZGRkpKSk5OTlJSUlJWVlZWWlpaWl5eXl5eYmJiYmJmZmZmZmpqampqaa2tsbG1tbm5vcHBxcXJyc3N0dHV2dnd3eHh5eXp6e3t8fH19fn5/f4CAgYGCgoODhISFhYaGh4eHiIiJiYqKiouLjIyMjY2Ojo6Pj4+QkJCRkZGSkpKSk5OTlJSUlJWVlZWWlpaWl5eXl5eYmJiYmJmZmZmZmZmammxtbW5ub29wcHFxcnJzc3R0dXV2dnd3eHl5enp7e3x8fX19fn5/f4CAgYGCgoODhISEhYWGhoeHiIiIiYmKioqLi4uMjI2NjY6Ojo+Pj5CQkJGRkZKSkpKTk5OUlJSUlZWVlZWWlpaWl5eXl5eYmJiYmJiZmZmZmZlubm9vcHBxcXJyc3NzdHR1dXZ2d3d4eHl5enp7e3x8fX1+fn9/f4CAgYGCgoODg4SEhYWGhoaHh4iIiImJioqKi4uLjIyNjY2Ojo6Pj4+PkJCQkZGRkpKSkpOTk5OUlJSUlZWVlZaWlpaWl5eXl5eYmJiYmJiZmZmZb29wcHFxcnJzc3R0dXV2dnd3d3h4eXl6ent7fHx8fX1+fn9/gICAgYGCgoODg4SEhYWFhoaHh4eIiImJiYqKiouLi4yMjI2NjY6Ojo+Pj5CQkJGRkZGSkpKSk5OTk5SUlJSVlZWVlZaWlpaWl5eXl5eYmJiYmJiYmXBxcXJyc3N0dHR1dXZ2d3d4eHh5eXp6e3t8fHx9fX5+f39/gICBgYGCgoODg4SEhYWFhoaHh4eIiIiJiYmKiouLi4yMjI2NjY2Ojo6Pj4+QkJCQkZGRkZKSkpKTk5OTlJSUlJWVlZWVlpaWlpaXl5eXl5eYmJiYmJhycnNzdHR0dXV2dnd3d3h4eXl6enp7e3x8fH19fn5+f3+AgICBgYKCgoODhISEhYWFhoaHh4eIiIiJiYmKioqLi4uMjIyNjY2Ojo6Oj4+PkJCQkJGRkZGSkpKSk5OTk5SUlJSUlZWVlZWWlpaWlpeXl5eXl5iYmJiYc3R0dXV1dnZ3d3d4eHl5eXp6e3t7fHx9fX1+fn5/f4CAgIGBgoKCg4ODhISEhYWGhoaHh4eIiIiJiYmKioqLi4uMjIyMjY2Njo6Ojo+Pj5CQkJCRkZGRkpKSkpOTk5OTlJSUlJSVlZWVlZaWlpaWlpeXl5eXl5iYmHV1dnZ2d3d3eHh5eXl6enp7e3x8fH19fX5+f39/gICAgYGCgoKDg4OEhISFhYWGhoaHh4eIiIiJiYmKioqLi4uLjIyMjY2NjY6Ojo+Pj4+QkJCQkZGRkZKSkpKSk5OTk5SUlJSUlZWVlZWWlpaWlpaXl5eXl5eXmJh2d3d3eHh4eXl5enp7e3t8fHx9fX1+fn5/f4CAgIGBgYKCgoODg4SEhIWFhYaGhoeHh4iIiIiJiYmKioqLi4uLjIyMjY2NjY6Ojo6Pj4+QkJCQkJGRkZGSkpKSk5OTk5OUlJSUlJWVlZWVlZaWlpaWlpeXl5eXl5eYeHh4eXl5enp6e3t7fHx8fX19fn5+f39/gICAgYGBgoKCg4ODhISEhYWFhoaGh4eHh4iIiImJiYqKioqLi4uMjIyMjY2NjY6Ojo6Pj4+PkJCQkJGRkZGSkpKSkpOTk5OTlJSUlJSVlZWVlZWWlpaWlpaXl5eXl5eXmHl5enp6e3t7fHx8fX19fn5+f39/f4CAgIGBgYKCgoODg4SEhISFhYWGhoaHh4eHiIiIiYmJiYqKiouLi4uMjIyMjY2NjY6Ojo6Pj4+PkJCQkJGRkZGRkpKSkpKTk5OTk5SUlJSUlZWVlZWVlpaWlpaWl5eXl5eXl5h6e3t7fHx8fX19fn5+fn9/f4CAgIGBgYGCgoKDg4OEhISEhYWFhoaGhoeHh4iIiIiJiYmJioqKi4uLi4yMjIyNjY2Njo6Ojo+Pj4+PkJCQkJGRkZGRkpKSkpKTk5OTk5SUlJSUlJWVlZWVlZaWlpaWlpeXl5eXl5eXfHx8fX19fn5+fn9/f4CAgICBgYGCgoKCg4ODhISEhIWFhYaGhoaHh4eHiIiIiYmJiYqKioqLi4uLjIyMjI2NjY2Ojo6Ojo+Pj4+QkJCQkJGRkZGRkpKSkpKTk5OTk5SUlJSUlJWVlZWVlZaWlpaWlpaXl5eXl5eXmH1+fn5+f39/f4CAgIGBgYGCgoKCg4ODg4SEhIWFhYWGhoaGh4eHh4iIiIiJiYmJioqKiouLi4uMjIyMjY2NjY6Ojo6Oj4+Pj4+QkJCQkZGRkZGSkpKSkpKTk5OTk5SUlJSUlJWVlZWVlZWWlpaWlpaWl5eXl5eXl5h/f39/gICAgIGBgYGCgoKCg4ODhISEhIWFhYWGhoaGh4eHh4iIiIiIiYmJiYqKioqLi4uLjIyMjIyNjY2Njo6Ojo6Pj4+Pj5CQkJCQkZGRkZGSkpKSkpOTk5OTk5SUlJSUlJWVlZWVlZWWlpaWlpaWl5eXl5eXl5iYgICBgYGBgYKCgoKDg4ODhISEhIWFhYWGhoaGh4eHh4eIiIiIiYmJiYqKioqKi4uLi4yMjIyMjY2NjY2Ojo6Oj4+Pj4+QkJCQkJCRkZGRkZKSkpKSkpOTk5OTlJSUlJSUlJWVlZWVlZaWlpaWlpaWl5eXl5eXl5eYmIGCgoKCg4ODg4OEhISEhYWFhYWGhoaGh4eHh4eIiIiIiYmJiYmKioqKi4uLi4uMjIyMjI2NjY2Njo6Ojo6Pj4+Pj5CQkJCQkZGRkZGRkpKSkpKSk5OTk5OTlJSUlJSUlZWVlZWVlZaWlpaWlpaXl5eXl5eXl5eYmJiDg4ODhISEhISFhYWFhoaGhoaHh4eHh4iIiIiIiYmJiYqKioqKi4uLi4uMjIyMjI2NjY2Njo6Ojo6Oj4+Pj4+QkJCQkJGRkZGRkZKSkpKSkpOTk5OTk5OUlJSUlJSVlZWVlZWVlpaWlpaWlpaXl5eXl5eXl5iYmJiYhISFhYWFhYaGhoaGh4eHh4eIiIiIiIiJiYmJiYqKioqKi4uLi4uMjIyMjI2NjY2NjY6Ojo6Oj4+Pj4+PkJCQkJCRkZGRkZGSkpKSkpKSk5OTk5OTlJSUlJSUlJWVlZWVlZWWlpaWlpaWlpeXl5eXl5eXl5iYmJiYmIaGhoaGhoeHh4eHiIiIiIiIiYmJiYmKioqKioqLi4uLi4yMjIyMjI2NjY2Njo6Ojo6Oj4+Pj4+PkJCQkJCQkZGRkZGRkpKSkpKSkpOTk5OTk5SUlJSUlJSVlZWVlZWVlZaWlpaWlpaWl5eXl5eXl5eXmJiYmJiYmJiHh4eHiIiIiIiIiYmJiYmJioqKioqKi4uLi4uLjIyMjIyMjY2NjY2Ojo6Ojo6Pj4+Pj4+PkJCQkJCQkZGRkZGRkpKSkpKSkpOTk5OTk5OUlJSUlJSUlZWVlZWVlZWWlpaWlpaWlpeXl5eXl5eXl5iYmJiYmJiYmJiZiIiJiYmJiYmJioqKioqKi4uLi4uLjIyMjIyMjI2NjY2NjY6Ojo6Ojo+Pj4+Pj4+QkJCQkJCRkZGRkZGRkpKSkpKSkpOTk5OTk5OUlJSUlJSUlJWVlZWVlZWVlpaWlpaWlpaWl5eXl5eXl5eXmJiYmJiYmJiYmJmZmYqKioqKioqLi4uLi4uLjIyMjIyMjI2NjY2NjY2Ojo6Ojo6Pj4+Pj4+PkJCQkJCQkJGRkZGRkZGSkpKSkpKSkpOTk5OTk5OUlJSUlJSUlJWVlZWVlZWVlpaWlpaWlpaWl5eXl5eXl5eXl5iYmJiYmJiYmJiZmZmZmZmLi4uLi4yMjIyMjIyMjY2NjY2NjY6Ojo6Ojo6Pj4+Pj4+Pj5CQkJCQkJCRkZGRkZGRkZKSkpKSkpKSk5OTk5OTk5OUlJSUlJSUlJWVlZWVlZWVlpaWlpaWlpaWlpeXl5eXl5eXl5iYmJiYmJiYmJiYmZmZmZmZmZmZjIyMjY2NjY2NjY2Ojo6Ojo6Ojo+Pj4+Pj4+PkJCQkJCQkJCRkZGRkZGRkZGSkpKSkpKSkpOTk5OTk5OTlJSUlJSUlJSUlZWVlZWVlZWVlpaWlpaWlpaWl5eXl5eXl5eXl5eYmJiYmJiYmJiYmJmZmZmZmZmZmZmZmY6Ojo6Ojo6Ojo+Pj4+Pj4+Pj4+QkJCQkJCQkJGRkZGRkZGRkZKSkpKSkpKSkpOTk5OTk5OTk5SUlJSUlJSUlJWVlZWVlZWVlZWWlpaWlpaWlpaWl5eXl5eXl5eXl5iYmJiYmJiYmJiYmJmZmZmZmZmZmZmZmZqampqPj4+Pj4+PkJCQkJCQkJCQkJCRkZGRkZGRkZGSkpKSkpKSkpKSk5OTk5OTk5OTk5SUlJSUlJSUlJWVlZWVlZWVlZWVlpaWlpaWlpaWlpeXl5eXl5eXl5eXmJiYmJiYmJiYmJiYmZmZmZmZmZmZmZmZmZqampqampqakJCQkJCRkZGRkZGRkZGRkZKSkpKSkpKSkpKSk5OTk5OTk5OTk5OUlJSUlJSUlJSUlJWVlZWVlZWVlZWVlpaWlpaWlpaWlpaXl5eXl5eXl5eXl5iYmJiYmJiYmJiYmJiZmZmZmZmZmZmZmZmZmpqampqampqampqampGRkpKSkpKSkpKSkpKSkpOTk5OTk5OTk5OTk5SUlJSUlJSUlJSUlJWVlZWVlZWVlZWVlZaWlpaWlpaWlpaWlpeXl5eXl5eXl5eXl5eYmJiYmJiYmJiYmJiYmZmZmZmZmZmZmZmZmZmampqampqampqampqampqam5uTk5OTk5OTk5OTk5OTlJSUlJSUlJSUlJSUlJSVlZWVlZWVlZWVlZWVlZaWlpaWlpaWlpaWlpaXl5eXl5eXl5eXl5eXl5iYmJiYmJiYmJiYmJiYmZmZmZmZmZmZmZmZmZmampqampqampqampqampqampubm5ubm5ublJSUlJSUlJSUlJSVlZWVlZWVlZWVlZWVlZWVlpaWlpaWlpaWlpaWlpaWlpeXl5eXl5eXl5eXl5eXl5iYmJiYmJiYmJiYmJiYmJmZmZmZmZmZmZmZmZmZmZmampqampqampqampqampqampubm5ubm5ubm5ubm5ubm5WVlZWVlZWWlpaWlpaWlpaWlpaWlpaWlpaWlpeXl5eXl5eXl5eXl5eXl5eXl5iYmJiYmJiYmJiYmJiYmJiYmJmZmZmZmZmZmZmZmZmZmZmZmpqampqampqampqampqampqampubm5ubm5ubm5ubm5ubm5ubm5ubnJyWlpeXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXmJiYmJiYmJiYmJiYmJiYmJiYmJiYmZmZmZmZmZmZmZmZmZmZmZmZmZmampqampqampqampqampqampqampubm5ubm5ubm5ubm5ubm5ubm5ubm5ucnJycnJycnJycmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmpqampqampqampqampqampqampqampqbm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ucnJycnJycnJycnJycnJycnJycnJmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZqampqampqampqampqampqampqampqampqampqampqbm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnZ2ampqampqampqampqampqampqampqampqampqampqampqbm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ucnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnZ2dnZ2dnZ2dnZ2dnZ2dm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJydnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2cnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnp6enp6enp6enp6enp2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6en5+fn5+fn5+fn5+fnp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enqCgoKCgoKCgoKCgoKCfn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+hoaGhoaGhoaGhoaGhoaCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCfn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+foqKioqKioqKioqKioqKhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn6Ojo6Ojo6Ojo6Ojo6OjoqKioqKioqKioqKioqKioqKioqKhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCkpKSkpKSkpKSkpKSkpKOjo6Ojo6Ojo6Ojo6Ojo6OjoqKioqKioqKioqKioqKioqKioqKioqKhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgpqWlpaWlpaWlpaWlpaSkpKSkpKSkpKSkpKSkpKOjo6Ojo6Ojo6Ojo6Ojo6Ojo6OioqKioqKioqKioqKioqKioqKioqKioqKhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaCgoKCgoKCgoKCgoKempqampqampqampqalpaWlpaWlpaWlpaWlpKSkpKSkpKSkpKSkpKSkpKOjo6Ojo6Ojo6Ojo6Ojo6Ojo6OioqKioqKioqKioqKioqKioqKioqKioqKioqGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGoqKenp6enp6enp6empqampqampqampqalpaWlpaWlpaWlpaWlpaSkpKSkpKSkpKSkpKSkpKSjo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6KioqKioqKioqKioqKioqKioqKioqKioqKioqGhoaGhoaGhoaGhoaGhoaGhoaGhqamoqKioqKioqKiop6enp6enp6enp6empqampqampqampqalpaWlpaWlpaWlpaWlpaSkpKSkpKSkpKSkpKSkpKSjo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6OioqKioqKioqKioqKioqKioqKioqKioqKioqGhoaGhoaGhoaqqqampqampqampqKioqKioqKioqKenp6enp6enp6enpqampqampqampqampqWlpaWlpaWlpaWlpaWlpKSkpKSkpKSkpKSkpKSkpKOjo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6KioqKioqKioqKioqKioqKioqKioqKioqKrq6qqqqqqqqqqqqmpqampqampqaioqKioqKioqKinp6enp6enp6enp6ampqampqampqampqWlpaWlpaWlpaWlpaWlpKSkpKSkpKSkpKSkpKSkpKSjo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6OioqKioqKioqKioqKioqKirKyrq6urq6urq6qqqqqqqqqqqampqampqampqaioqKioqKioqKinp6enp6enp6enp6ampqampqampqampqWlpaWlpaWlpaWlpaWlpKSkpKSkpKSkpKSkpKSkpKSjo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6OioqKioqKioq2trKysrKysrKurq6urq6urqqqqqqqqqqqqqampqampqampqKioqKioqKioqKenp6enp6enp6enpqampqampqampqampaWlpaWlpaWlpaWlpaWlpKSkpKSkpKSkpKSkpKSkpKOjo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Kura2tra2traysrKysrKysq6urq6urq6uqqqqqqqqqqqmpqampqampqaioqKioqKioqKinp6enp6enp6enp6empqampqampqampqalpaWlpaWlpaWlpaWlpaSkpKSkpKSkpKSkpKSkpKSko6Ojo6Ojo6Ojo6Ojo6Ojr66urq6urq2tra2tra2srKysrKysrKurq6urq6urqqqqqqqqqqqpqampqampqampqKioqKioqKioqKenp6enp6enp6empqampqampqampqampaWlpaWlpaWlpaWlpaWkpKSkpKSkpKSkpKSkpKSko6Ojo6Ojo6Ojo6+vr6+vr6+urq6urq6tra2tra2trKysrKysrKyrq6urq6urq6qqqqqqqqqqqampqampqampqKioqKioqKioqKenp6enp6enp6enpqampqampqampqampaWlpaWlpaWlpaWlpaWkpKSkpKSkpKSkpKSkpKSko6Ojo6OwsLCwsLCvr6+vr6+urq6urq6ura2tra2traysrKysrKyrq6urq6urq6qqqqqqqqqqqampqampqampqKioqKioqKioqKenp6enp6enp6enpqampqampqampqampaWlpaWlpaWlpaWlpaWkpKSkpKSkpKSkpKSkpKSksbGxsbGwsLCwsLCvr6+vr6+urq6urq6ura2tra2traysrKysrKyrq6urq6urq6qqqqqqqqqqqampqampqampqKioqKioqKioqKenp6enp6enp6empqampqampqampqalpaWlpaWlpaWlpaWlpaSkpKSkpKSkpKSkpLKysrKxsbGxsbGwsLCwsK+vr6+vr6+urq6urq6tra2tra2trKysrKysrKurq6urq6urqqqqqqqqqqqpqampqampqamoqKioqKioqKiop6enp6enp6enp6ampqampqampqampqWlpaWlpaWlpaWlpaWlpKSkpKSkpKSzs7OysrKysrGxsbGxsbCwsLCwsK+vr6+vr66urq6urq6tra2tra2srKysrKysq6urq6urq6uqqqqqqqqqqqmpqampqampqaioqKioqKioqKinp6enp6enp6enpqampqampqampqampaWlpaWlpaWlpaWlpaSkpKSktLSzs7Ozs7KysrKysbGxsbGxsLCwsLCwr6+vr6+vrq6urq6ura2tra2traysrKysrKyrq6urq6urq6qqqqqqqqqqqampqampqampqKioqKioqKiop6enp6enp6enp6empqampqampqampqWlpaWlpaWlpaWlpaWlpLW0tLS0tLOzs7OzsrKysrKxsbGxsbGwsLCwsLCvr6+vr6+urq6urq6tra2tra2trKysrKysrKurq6urq6uqqqqqqqqqqqmpqampqampqaioqKioqKioqKenp6enp6enp6enpqampqampqampqalpaWlpaWlpaWlpaW1tbW1tbS0tLS0s7Ozs7OysrKysrGxsbGxsLCwsLCwr6+vr6+vrq6urq6ura2tra2traysrKysrKyrq6urq6urqqqqqqqqqqqpqampqampqamoqKioqKioqKinp6enp6enp6enpqampqampqampqampaWlpaWlpaWltra2tbW1tbW0tLS0tLOzs7OzsrKysrKxsbGxsbGwsLCwsK+vr6+vr66urq6urq2tra2tra2srKysrKysq6urq6urq6qqqqqqqqqqqampqampqamoqKioqKioqKiop6enp6enp6enp6ampqampqampqampaWlpaWlpbe3tra2tra1tbW1tLS0tLSzs7Ozs7KysrKysbGxsbGxsLCwsLCvr6+vr6+urq6urq6tra2tra2trKysrKysq6urq6urq6uqqqqqqqqqqampqampqampqKioqKioqKiop6enp6enp6enp6ampqampqampqampaWlpaW4t7e3t7a2tra2tbW1tbS0tLS0s7Ozs7OysrKysrGxsbGxsLCwsLCwr6+vr6+vrq6urq6ura2tra2trKysrKysrKurq6urq6uqqqqqqqqqqqmpqampqampqKioqKioqKiop6enp6enp6enp6ampqampqampqampaWluLi4uLe3t7e2tra2trW1tbW0tLS0tLOzs7OzsrKysrKxsbGxsbCwsLCwr6+vr6+vrq6urq6ura2tra2trKysrKysrKurq6urq6uqqqqqqqqqqqmpqampqampqKioqKioqKiop6enp6enp6enpqampqampqampqalpbm5uLi4uLi3t7e3tra2trW1tbW1tLS0tLOzs7OzsrKysrKxsbGxsbCwsLCwsK+vr6+vrq6urq6ura2tra2trKysrKysrKurq6urq6uqqqqqqqqqqampqampqamoqKioqKioqKinp6enp6enp6enpqampqampqampqa6ubm5ubi4uLi3t7e3tra2tra1tbW1tLS0tLSzs7OzsrKysrKxsbGxsbCwsLCwsK+vr6+vrq6urq6ura2tra2trKysrKysrKurq6urq6qqqqqqqqqqqampqampqamoqKioqKioqKenp6enp6enp6empqampqampqamurq6ubm5ubi4uLi3t7e3t7a2tra1tbW1tLS0tLSzs7OzsrKysrKxsbGxsbCwsLCwr6+vr6+vrq6urq6ura2tra2trKysrKysq6urq6urq6qqqqqqqqqpqampqampqaioqKioqKiop6enp6enp6enp6ampqampqampru7urq6urm5ubm4uLi4t7e3t7a2tra1tbW1tLS0tLSzs7OzsrKysrKxsbGxsbCwsLCwr6+vr6+urq6urq6tra2tra2srKysrKyrq6urq6urqqqqqqqqqqmpqampqampqKioqKioqKinp6enp6enp6enpqampqampqa7u7u7urq6urm5ubm4uLi3t7e3t7a2tra1tbW1tLS0tLOzs7OzsrKysrKxsbGxsLCwsLCvr6+vr6+urq6urq2tra2traysrKysrKurq6urq6uqqqqqqqqqqampqampqamoqKioqKioqKenp6enp6enp6ampqampqamvLy7u7u7urq6urm5ubi4uLi3t7e3tra2trW1tbW1tLS0tLOzs7OysrKysrGxsbGxsLCwsLCvr6+vr66urq6ura2tra2trKysrKysq6urq6urq6qqqqqqqqqpqampqampqKioqKioqKinp6enp6enp6enpqampqampr28vLy7u7u7urq6ubm5ubi4uLi3t7e3tra2trW1tbW0tLS0s7Ozs7OysrKysbGxsbGwsLCwsK+vr6+vrq6urq6tra2tra2srKysrKyrq6urq6uqqqqqqqqqqampqampqamoqKioqKioqKenp6enp6enp6ampqampqa9vby8vLy7u7u6urq6ubm5ubi4uLe3t7e2tra2tbW1tbS0tLSzs7Ozs7KysrKxsbGxsbCwsLCwr6+vr6+urq6urq2tra2trKysrKysq6urq6urq6qqqqqqqqmpqampqampqKioqKioqKinp6enp6enp6empqampqamvr29vby8vLu7u7u6urq5ubm5uLi4uLe3t7a2tra1tbW1tLS0tLOzs7OzsrKysrGxsbGwsLCwsK+vr6+vrq6urq6tra2tra2srKysrKyrq6urq6uqqqqqqqqqqampqampqaioqKioqKiop6enp6enp6empqampqampr6+vb29vLy8vLu7u7q6urq5ubm4uLi4t7e3tra2trW1tbW0tLS0s7Ozs7KysrKysbGxsbCwsLCwr6+vr6+urq6urq2tra2trKysrKysq6urq6urqqqqqqqqqampqampqaioqKioqKiop6enp6enp6enpqampqampqa+vr69vb29vLy8u7u7urq6urm5ubi4uLi3t7e2tra2tbW1tbS0tLSzs7OzsrKysrGxsbGxsLCwsK+vr6+vrq6urq6tra2traysrKysrKurq6urq6qqqqqqqqmpqampqamoqKioqKioqKenp6enp6enpqampqampqamv7++vr69vb28vLy7u7u6urq6ubm5uLi4t7e3t7a2tra1tbW0tLS0s7Ozs7KysrKxsbGxsbCwsLCvr6+vr66urq6ura2tra2srKysrKyrq6urq6qqqqqqqqqpqampqampqKioqKioqKenp6enp6enpqampqampqampr+/v76+vr29vby8vLu7u7q6urm5ubm4uLi3t7e3tra2tbW1tbS0tLSzs7OzsrKysrGxsbGwsLCwr6+vr6+urq6urq2tra2trKysrKyrq6urq6uqqqqqqqqpqampqampqKioqKioqKenp6enp6enpqampqampqampaXAv7+/vr6+vb29vLy8u7u7urq6ubm5uLi4uLe3t7a2tra1tbW0tLS0s7Ozs7KysrKxsbGxsLCwsK+vr6+vrq6urq2tra2trKysrKysq6urq6uqqqqqqqqpqampqampqKioqKioqKenp6enp6enpqampqampqampaWlwMC/v76+vr29vby8vLu7u7q6urq5ubm4uLi3t7e2tra2tbW1tLS0tLOzs7OysrKysbGxsbCwsLCvr6+vrq6urq6tra2traysrKysq6urq6uqqqqqqqqpqampqampqKioqKioqKenp6enp6empqampqampqalpaWlpcDAv7+/vr6+vb29vLy8u7u7urq6ubm5uLi4t7e3t7a2trW1tbS0tLSzs7OzsrKysbGxsbCwsLCvr6+vr66urq6tra2traysrKysq6urq6uqqqqqqqqpqampqamoqKioqKiop6enp6enp6empqampqampqWlpaWlpaXAwMC/v7++vr69vby8vLu7u7q6urm5ubi4uLe3t7e2tra1tbW0tLS0s7OzsrKysrGxsbGwsLCwr6+vr66urq6tra2traysrKysq6urq6uqqqqqqqqpqampqamoqKioqKinp6enp6enp6ampqampqampaWlpaWlpaWlwcDAwL+/vr6+vb29vLy8u7u6urq5ubm4uLi3t7e3tra2tbW1tLS0s7Ozs7KysrKxsbGwsLCwr6+vr66urq6ura2traysrKysq6urq6uqqqqqqqmpqampqaioqKioqKinp6enp6enpqampqampqalpaWlpaWlpaWkpMHAwMC/v7++vr29vby8vLu7u7q6ubm5uLi4t7e3tra2tbW1tbS0tLOzs7KysrKxsbGxsLCwr6+vr66urq6tra2traysrKyrq6urq6qqqqqqqqmpqampqKioqKioqKenp6enp6empqampqampaWlpaWlpaWlpaSkpKTBwcDAv7+/vr69vb28vLy7u7u6urm5ubi4uLe3t7a2trW1tbS0tLOzs7OysrKxsbGxsLCwr6+vr66urq6tra2trKysrKyrq6urq6qqqqqqqampqamoqKioqKinp6enp6enpqampqampqalpaWlpaWlpaSkpKSkpKSkwcHAwMC/v76+vr29vLy8u7u6urq5ubm4uLi3t7e2tra1tbW0tLSzs7OysrKxsbGxsLCwr6+vr66urq6tra2trKysrKurq6urqqqqqqqpqampqaioqKioqKenp6enp6ampqampqampaWlpaWlpaWkpKSkpKSkpKSko8HBwMDAv7++vr69vby8vLu7urq6ubm5uLi3t7e2tra1tbW0tLSzs7OysrKxsbGxsLCwr6+vr66urq2tra2srKysq6urq6uqqqqqqqmpqampqKioqKinp6enp6enpqampqampaWlpaWlpaWlpKSkpKSkpKSko6Ojo6PBwcDAwL+/vr6+vb28vLu7u7q6urm5uLi4t7e3tra1tbW0tLSzs7OysrKxsbGwsLCwr6+vrq6urq2tra2srKysq6urq6qqqqqpqampqaioqKioqKenp6enpqampqampqWlpaWlpaWlpKSkpKSkpKSko6Ojo6Ojo6OjwcHAwMC/v76+vb29vLy7u7u6urm5ubi4t7e3tra1tbW0tLSzs7OysrKxsbGwsLCvr6+vrq6ura2traysrKyrq6urqqqqqqmpqampqKioqKinp6enp6ampqampqalpaWlpaWlpKSkpKSkpKSjo6Ojo6Ojo6Ojo6KiosHBwMDAv7++vr29vLy8u7u6urq5ubi4t7e3tra2tbW0tLSzs7OysrKxsbGwsLCvr6+urq6tra2trKysq6urq6qqqqqpqampqaioqKiop6enp6empqampqalpaWlpaWlpKSkpKSkpKSjo6Ojo6Ojo6OioqKioqKioqLBwcDAv7+/vr69vby8u7u7urq5ubi4uLe3tra2tbW0tLSzs7OysrGxsbCwsK+vr66urq2tra2srKyrq6urqqqqqqmpqamoqKiop6enp6empqampqalpaWlpaWkpKSkpKSkpKOjo6Ojo6Ojo6KioqKioqKioqKioaGhwcHAwL+/vr69vb28vLu7urq5ubi4uLe3tra2tbW0tLSzs7KysrGxsbCwr6+vrq6ura2trKysrKurq6qqqqqpqampqKioqKenp6enpqampqalpaWlpaWkpKSkpKSko6Ojo6Ojo6OioqKioqKioqKioaGhoaGhoaGhocHBwMC/v76+vb28vLu7urq5ubm4uLe3tra2tbW0tLOzs7KysbGxsLCwr6+urq6tra2srKyrq6urqqqqqampqaioqKinp6enpqampqalpaWlpaSkpKSkpKOjo6Ojo6OjoqKioqKioqKioaGhoaGhoaGhoaGhoaCgoKDBwMC/v76+vb28vLu7u7q6ubm4uLe3tra1tbW0tLOzsrKysbGwsLCvr66urq2traysrKurq6qqqqmpqamoqKinp6enpqampqalpaWlpaSkpKSko6Ojo6Ojo6KioqKioqKioaGhoaGhoaGhoaCgoKCgoKCgoKCgoKCgwcDAv7++vr29vLy7u7q6ubm4uLe3tra1tbS0tLOzsrKxsbCwsK+vrq6ura2trKyrq6uqqqqpqampqKiop6enp6ampqalpaWlpKSkpKSjo6Ojo6OioqKioqKioaGhoaGhoaGhoKCgoKCgoKCgoKCgoJ+fn5+fn5+fn8HAwL++vr29vLy7u7q6ubm4uLe3tra1tbS0s7OysrGxsbCwr6+urq6traysrKurq6qqqampqKioqKenp6ampqalpaWlpKSkpKOjo6OjoqKioqKioaGhoaGhoaCgoKCgoKCgoKCfn5+fn5+fn5+fn5+fn5+fn5+fnp7AwL+/vr69vLy7u7q6ubm4uLe3tra1tbS0s7OysrGxsLCvr66urq2trKyrq6uqqqqpqaioqKenp6ampqalpaWkpKSko6Ojo6KioqKioaGhoaGhoaCgoKCgoKCfn5+fn5+fn5+fn5+enp6enp6enp6enp6enp6enp6ewMC/vr69vby7u7q6ubm4uLe3trW1tLSzs7KysbGwsK+vrq6tra2srKurqqqqqamoqKinp6empqalpaWkpKSjo6OjoqKioqGhoaGhoKCgoKCgn5+fn5+fn5+fnp6enp6enp6enp6enp6dnZ2dnZ2dnZ2dnZ2dnZ2dncC/v769vby8u7q6ubm4uLe2trW1tLSzs7KysbCwr6+urq2trKysq6uqqqmpqKiop6empqalpaWkpKSjo6OioqKioaGhoaCgoKCgn5+fn5+fnp6enp6enp6dnZ2dnZ2dnZ2dnZ2dnZ2dnZycnJycnJycnJycnJycnJy/v76+vby8u7u6ubm4uLe2trW1tLOzsrKxsbCwr66ura2srKurqqqpqaioqKenpqalpaWkpKSjo6KioqKhoaGgoKCgn5+fn56enp6enp2dnZ2dnZ2dnJycnJycnJycnJycnJycnJycnJycnJubm5ycnJycnJycnJycv76+vb28u7u6ubm4t7e2trW0tLOzsrGxsLCvrq6traysq6uqqqmpqKinp6ampaWkpKSjo6KioqGhoaCgoJ+fn56enp6enZ2dnZ2cnJycnJycm5ubm5ubm5ubm5ubm5ubm5qampqampqampqbm5ubm5ubm5ubm5ubm7++vb28u7u6ubm4t7e2trW0tLOysrGwsK+vrq2trKyrqqqpqaiop6empqWlpKSjo6KioaGhoKCfn5+enp6enZ2dnJycnJybm5ubm5uampqampqampqamZmZmZmZmZmZmZmZmZmZmZmZmZmZmZqampqampqampqampq+vr28vLu6urm4t7e2tbW0s7OysbGwr6+ura2srKuqqqmoqKenpqalpKSjo6KioaGgoKCfn56enp2dnZycnJubm5qampqamZmZmZmZmZiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmZmZmZmZmZmZmZmZvr29vLu6urm4uLe2tbW0s7OysbCwr66uraysq6qqqaiop6ampaWko6OioqGhoJ+fnp6enZ2cnJubm5qampmZmZmYmJiYl5eXl5eXl5eWlpaWlpaWlpaWlpaWlpaWlpaWl5eXl5eXl5eXl5eXl5iYmJiYmJiYmJiYmb69vLu7urm4uLe2tbW0s7KysbCvr66trKyrqqqpqKenpqWlpKOjoqGhoKCfnp6dnZycm5uampmZmZiYmJeXl5aWlpaVlZWVlZWVlZSUlJSUlJSUlJSUlJSUlZWVlZWVlZWVlZWVlpaWlpaWlpaWl5eXl5eXl5eYmJi9vLy7urm5uLe2tbW0s7KxsbCvrq6trKuqqqmop6empaSko6KioaCfn56dnZycm5qamZmYmJeXlpaWlZWVlJSUk5OTk5OTkpKSkpKSkpKSkpKSkpKSkpKTk5OTk5OTk5OUlJSUlJSUlZWVlZWVlZaWlpaWlpaXl5eXvby7urq5uLe2trW0s7KxsbCvrq2srKuqqaiop6alpKOjoqGgoJ+enZ2cm5qamZiYl5eWlZWUlJOTk5KSkpGRkZCQkJCQkJCPj4+Pj4+PkJCQkJCQkJCQkZGRkZGRkZKSkpKSk5OTk5OTlJSUlJSVlZWVlZWWlpaWlr28u7q5uLe3trW0s7KxsbCvrq2sq6qqqainpqWko6OioaCfnp2dnJuamZiYl5aWlZSTk5KSkZGQkI+Pjo6OjY2NjY2NjIyMjIyMjIyNjY2NjY2Njo6Ojo6Pj4+PkJCQkJCRkZGRkpKSkpKTk5OTlJSUlJSVlZWVlZW8u7q6ubi3trW0s7OysbCvrq2sq6qpqKempqWko6KhoJ+enZybmpmYl5eWlZSTkpKRkI+Pjo2NjIyLi4qKiomJiYmJiYmJiYmJiYmJiYqKioqLi4uLjIyMjY2NjY6Ojo+Pj4+QkJCRkZGRkpKSkpOTk5OUlJSUlJWVvLu6ubi3t7a1tLOysbCvrq2sq6qpqKempaSjoqGgn56dnJuamZiXlpWUk5KRkI+OjYyLioqJiIiHh4aGhYWFhYWEhISEhYWFhYWFhoaGh4eHiIiIiYmKioqLi4yMjI2NjY6Ojo+Pj5CQkJGRkZGSkpKTk5OTk5SUlLy7urm4t7a1tLOysbCvrq2sq6qpqKempaSjoqGgnp2cm5qZmJaVlJOSkY+OjYyLiomIh4aFhIOCgoGBgICAf39/f39/gICAgIGBgYKCg4OEhIWFhoaHh4iIiYmKiouLi4yMjY2Njo6Pj4+QkJCRkZGSkpKSk5OTk5S8u7q5uLe2tbSzsrGwr66trKuqqKempaSjoqCfnp2cmpmYl5WUk5GQj42Mi4mIh4WEg4GAf359fHt7enl5eXl5eXl5eXp6e3t8fX1+fn+AgYGCg4OEhIWGhoeHiIiJioqLi4uMjI2Njo6Oj4+QkJCRkZGSkpKSk5OTvLu6ubi3trW0s7KxsK+trKuqqainpqSjoqGfnp2cmpmYlpWTkpCPjYyKiYeFhIKAf318enh3dnRzcnFxcHBwcHFxcnJzdHV2d3h5enp7fH1+f4CBgYKDhISFhoaHiIiJiYqKi4uMjI2Njo6Pj4+QkJCRkZGSkpKTk7y7urm4t7a1tLOysbCurayrqqmnpqWko6Ggn52cm5mYlpWTkpCOjYuJh4aEgoB+fHl3dXNxb2xraWdmZWRkZWVmZ2hqa21ucHFzdHV3eHl6e31+f4CAgYKDhIWFhoeHiImJioqLi4yMjY2Ojo6Pj5CQkJGRkZKSkpO8u7q5uLe2tbSzsrGwrq2sq6qpp6alpKKhoJ6dm5qZl5WUkpGPjYuJh4WDgX98end1cm9saWViXltXVVNSUlNVWFtdYGNmaGpsbnBydHV3eHl7fH1+f4CBgoOEhIWGh4eIiYmKiouLjIyNjY6Oj4+PkJCRkZGSkpKTvby7uri3trW0s7KxsK+urKuqqaimpaSioaCenZuamJeVlJKQjo2LiYeEgoB9e3h1cm9rZ2NeWVJLQjcrIyo2QEhPVFldYWRnamxucHJ0dnd5ent8fn+AgYKDg4SFhoaHiImJioqLi4yMjY2Ojo+Pj5CQkZGRkpKSk728u7q5uLe2tbSzsbCvrq2sqqmop6Wko6Kgn52cmpmXlpSSkY+Ni4mHhYOBfnx5dnNwbGlkYFtWT0lCPDk7QEdNUldbX2JlaGttb3FzdXZ4eXp8fX5/gIGCg4SFhYaHh4iJiYqLi4yMjY2Ojo6Pj5CQkJGRkZKSkpO+vby7urm4t7W0s7KxsK+urKuqqaimpaSioaCenZuamJeVlJKQj42LiYeFg4F+fHp3dHJvbGlmY2BeXFpZWlpcXWBiZGZoa21vcHJ0dXd4eXt8fX5/gIGCg4SFhYaHh4iJiYqLi4yMjY2Ojo6Pj5CQkJGRkZKSkpOTv769vLq5uLe2tbSzsrGwr62sq6qpp6alpKKhoJ6dm5qZl5aUkpGPjoyKiIaFg4F/fXt5d3VzcW9ubWtrampqamtsbW5vcHJzdHV3eHl6e3x9fn+AgYKDhISFhoeHiImJioqLi4yMjY2Ojo+Pj5CQkZGRkpKSk5OTk7++vby7urm4t7a1tLOysbCvrayrqqmopqWko6Ggn52cm5mYl5WUkpGPjoyLiYeGhIOBgH59fHp5eHd2dnV1dXV1dnZ2d3h5eXp7fH19fn+AgYGCg4SEhYaGh4iIiYmKi4uMjI2NjY6Oj4+QkJCRkZGSkpKTk5OTlJTAv7++vby7ubi3trW0s7KxsK+urayqqainpqWjoqGgnp2cm5mYl5WUk5KQj46Mi4qIh4aFhIOCgYCAf35+fn19fX1+fn5+f3+AgIGBgoKDhISFhYaHh4iIiYmKiouLjIyNjY6Ojo+PkJCQkZGRkpKSkpOTk5SUlJSVwsHAv769vLu6ubi3trW0s7Kwr66trKuqqainpqSjoqGgn52cm5qZmJeVlJOSkZCPjo2Mi4qJiIiHhoaFhYWEhISEhISEhISFhYWFhoaHh4eIiImJioqKi4uMjIyNjY6Ojo+Pj5CQkJGRkZKSkpOTk5OUlJSUlZWVlcPCwcC/vr28u7q5uLe2tbSzsrGwr66trKuqqainpqWko6Ggn56dnJuamZiXlpWUk5KSkZCPjo6NjYyMi4uKioqKiYmJiYmJiYqKioqKi4uLi4yMjIyNjY2Ojo6Pj4+QkJCRkZGRkpKSk5OTk5SUlJSVlZWVlZaWlpbEw8LBwL++vb28u7q5uLe2tbSzsrGwr66trKuqqainpqWko6KhoJ+enp2cm5qZmJeXlpWVlJOTkpGRkJCQj4+Pjo6Ojo6Ojo6Ojo6Ojo6Ojo+Pj4+PkJCQkJGRkZGRkpKSkpOTk5OUlJSUlJWVlZWVlpaWlpaXl5eXxcTDw8LBwL++vby7urm5uLe2tbSzsrGwr66trKyrqqmop6alpKOjoqGgn56enZybm5qZmZiXl5aWlZWUlJSTk5OSkpKSkpKSkpKSkpKSkpKSkpKSkpKSk5OTk5OTlJSUlJSUlZWVlZWWlpaWlpaXl5eXl5eXmJiYmMfGxcTDwsHAwL++vby7urm4uLe2tbSzsrGwsK+urayrqqqpqKempaWko6KioaCfn56dnZycm5uampmZmJiYl5eXlpaWlpWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlpaWlpaWlpaXl5eXl5eXl5iYmJiYmJiYmZmZmZnIx8bFxcTDwsHAv7++vby7urm5uLe2tbSzs7KxsK+urq2sq6qqqainp6alpaSjo6KhoaCgn5+enp2dnJybm5uampqZmZmZmZiYmJiYmJiYl5eXl5eXl5eXl5eYmJiYmJiYmJiYmJiYmJmZmZmZmZmZmZmZmpqampqaycjIx8bFxMPDwsHAv76+vby7urq5uLe2tbW0s7KysbCvrq6trKyrqqmpqKenpqalpKSjo6KioaGgoJ+fnp6enZ2dnJycnJubm5ubm5qampqampqampqampqampqampqampqampqampqampqampqampubm5ubm5ubm8vKycjHx8bFxMPDwsHAv7++vby7u7q5uLe3trW0tLOysbGwr6+ura2sq6uqqamoqKempqWlpKSjo6OioqGhoaCgoJ+fn56enp6enZ2dnZ2dnJycnJycnJycnJycnJycnJubm5ubnJycnJycnJycnJycnJycnJycnJzMy8rKycjHxsbFxMPDwsHAv7++vby8u7q5ubi3tra1tLSzsrKxsLCvrq6trKyrq6qqqamop6enpqalpaSkpKOjoqKioqGhoaCgoKCgn5+fn5+enp6enp6enp6enZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dzc3My8rJycjHxsbFxMPDwsHAwL++vb28u7q6ubi4t7a2tbS0s7KysbCwr6+urq2srKurqqqpqaioqKenpqampaWlpKSko6OjoqKioqKhoaGhoaCgoKCgoKCfn5+fn5+fn5+fn5+fnp6enp6enp6enp6enp6enp6ens/OzczMy8rJycjHxsbFxMPDwsHAwL++vr28u7u6ubm4t7e2trW0tLOzsrGxsLCvr66ura2srKurqqqpqamoqKenp6ampqWlpaWkpKSko6Ojo6KioqKioqGhoaGhoaGhoKCgoKCgoKCgoKCgoJ+fn5+fn5+fn5+fn5/Qz87OzczLy8rJyMjHxsbFxMPDwsHBwL+/vr29vLu7urm5uLe3tra1tLSzs7KysbGwsK+vrq6traysq6urqqqpqamoqKinp6empqampaWlpaSkpKSko6Ojo6OjoqKioqKioqKhoaGhoaGhoaGhoaGgoKCgoKCgoKCg0dDQz87OzczLy8rJyMjHxsbFxMTDwsHBwL+/vr69vLy7urq5ubi3t7a2tbW0s7OysrGxsLCwr6+urq2trKysq6urqqqqqampqKiop6enp6ampqalpaWlpaSkpKSkpKOjo6Ojo6OjoqKioqKioqKioqGhoaGhoaGhodLS0dDPz87NzczLysrJyMjHxsbFxMTDwsLBwMC/vr69vby7u7q6ubi4t7e2trW1tLSzs7KysbGwsK+vr66ura2trKysq6urqqqqqampqaioqKenp6enpqampqalpaWlpaSkpKSkpKSko6Ojo6Ojo6OjoqKioqKioqLU09LR0dDPz87NzMzLysrJyMjHxsbFxMTDwsLBwcC/v769vby8u7u6ubm4uLe3tra1tbS0s7OysrKxsbCwr6+vrq6ura2srKysq6urqqqqqampqaioqKinp6enp6ampqampqWlpaWlpaSkpKSkpKSko6Ojo6Ojo6Oj1dTT09LR0NDPzs7NzMzLysrJyMjHxsbFxMTDw8LBwcC/v76+vb28u7u6urm5uLi3t7a2tbW0tLOzs7KysbGxsLCvr6+urq6tra2srKyrq6urqqqqqampqamoqKiop6enp6empqampqampaWlpaWlpaSkpKSkpKSkpNbV1NTT0tLR0NDPzs3NzMvLysnJyMjHxsbFxMTDw8LBwcDAv7++vb28vLu7urq5ubi4t7e2trW1tLS0s7OysrKxsbCwsK+vr66urq2traysrKyrq6uqqqqqqampqamoqKioqKenp6enpqampqampqWlpaWlpaWlpKTX1tXV1NPT0tHR0M/Pzs3NzMvLysnJyMfHxsbFxMTDw8LBwcDAv7++vr29vLu7urq5ubi4uLe3tra1tbS0tLOzsrKysbGxsLCvr6+vrq6ura2trKysrKurq6uqqqqqqampqamoqKioqKenp6enp6ampqampqalpaWl2NfW1tXU1NPS0tHQ0M/Ozs3MzMvKysnJyMfHxsbFxMTDw8LBwcDAv7++vr29vLy7u7q6ubm4uLe3tra2tbW0tLSzs7KysrGxsbCwsK+vr66urq2tra2srKysq6urq6qqqqqpqampqaioqKioqKenp6enp6ampqamptnY19fW1dXU09PS0dHQz8/Ozc3My8vKysnIyMfHxsXFxMTDw8LBwcDAv7++vr29vLy7u7q6ubm4uLi3t7a2tbW1tLSzs7OysrKxsbGwsLCvr6+urq6ura2trKysrKurq6uqqqqqqqmpqampqKioqKiop6enp6enpqba2djY19bW1dTU09LS0dDQz87OzczMy8vKycnIyMfGxsXFxMTDwsLBwcDAv7++vr29vLy7u7q6ubm5uLi3t7a2trW1tLS0s7OzsrKysbGxsLCwr6+vrq6urq2traysrKysq6urq6qqqqqqqampqamoqKioqKinp6en29rZ2NjX1tbV1NTT0tLR0NDPz87NzczLy8rKycjIx8fGxsXExMPDwsLBwcDAv7++vr29vLy7u7q6ubm5uLi3t7e2trW1tbS0s7OzsrKysbGxsLCwr6+vr66urq6tra2srKysq6urq6uqqqqqqqmpqampqKioqKiop9vb2tnZ2NfX1tXV1NPT0tHR0M/Pzs7NzMzLysrJycjIx8bGxcXExMPDwsLBwcDAv7++vr29vLy7u7q6ubm5uLi3t7e2trW1tbS0tLOzsrKysbGxsbCwsK+vr66urq6tra2trKysrKurq6urqqqqqqqpqampqaioqKjc29va2dnY19fW1dXU09PS0dHQ0M/Ozs3MzMvLysnJyMjHx8bGxcTEw8PCwsHBwMC/v76+vb28vLy7u7q6ubm4uLi3t7a2trW1tbS0tLOzsrKysbGxsbCwsK+vr6+urq6tra2trKysrKyrq6urqqqqqqqpqampqamo3dzb29rZ2djX19bV1dTT09LR0dDQz87Ozc3My8vKysnIyMfHxsbFxcTEw8LCwcHAwL+/v76+vb28vLu7urq6ubm4uLe3t7a2trW1tLS0s7OzsrKysbGxsbCwsK+vr66urq6tra2trKysrKyrq6urqqqqqqqpqampqd3d3Nvb2tnZ2NfX1tXV1NPT0tHR0NDPzs7NzczLy8rKycnIx8fGxsXFxMTDw8LCwcHAwL+/vr69vby8u7u7urq5ubi4uLe3tra2tbW1tLS0s7OzsrKysbGxsLCwsK+vr66urq6tra2trKysrKurq6urqqqqqqqpqane3d3c29va2dnY19fW1dXU09PS0dHQ0M/Ozs3NzMvLysrJyMjHx8bGxcXExMPDwsLBwcDAv7++vr29vLy7u7u6urm5ubi4t7e3tra1tbW0tLSzs7OysrKxsbGwsLCwr6+vr66urq2tra2srKysrKurq6urqqqqqqqp397d3Nzb2trZ2NjX1tbV1NTT09LR0dDPz87OzczMy8vKysnIyMfHxsbFxcTEw8PCwsHBwMC/v76+vb28vLu7u7q6ubm5uLi3t7e2trW1tbS0tLOzs7KysrGxsbGwsLCvr6+vrq6urq2tra2srKysq6urq6uqqqqqqt/e3t3c3Nva2tnY2NfW1tXU1NPS0tHQ0M/Pzs3NzMzLy8rJycjIx8fGxsXExMPDwsLBwcDAv7+/vr69vby8u7u6urq5ubi4uLe3tra2tbW1tLS0s7OzsrKysbGxsLCwsK+vr6+urq6tra2traysrKyrq6urq6qqqqrf397d3dzb29rZ2djX19bV1dTT09LR0dDQz87Ozc3My8vKysnJyMfHxsbFxcTEw8PCwsHBwMC/v76+vb28vLy7u7q6ubm5uLi3t7e2tra1tbW0tLSzs7OysrKxsbGwsLCwr6+vrq6urq2tra2srKysrKurq6urqqqq4N/e3t3c3Nva2tnY2NfW1tXU1NPS0tHR0M/Pzs3NzMzLy8rJycjIx8fGxsXExMPDwsLBwcDAv7+/vr69vby8u7u6urq5ubi4uLe3t7a2tbW1tLS0s7OzsrKysbGxsLCwsK+vr6+urq6ura2traysrKyrq6urq6qqquDf397d3dzb29rZ2djX19bV1dTT09LR0dDQz87OzczMy8vKysnIyMfHxsbFxcTEw8PCwsHBwMC/v76+vb28vLu7u7q6ubm5uLi3t7e2trW1tbS0tLOzs7KysrGxsbGwsLCvr6+vrq6urq2tra2srKysq6urq6uqqqrg4N/e3t3c29va2dnY19fW1dXU09PS0tHQ0M/Ozs3NzMvLysrJycjHx8bGxcXExMPDwsLBwcDAv7++vr29vLy7u7u6urm5ubi4t7e3tra1tbW0tLSzs7OysrKxsbGxsLCwr6+vr66urq6tra2trKysrKurq6urqqqq4eDf3t7d3Nzb2trZ2NjX1tbV1NTT0tLR0NDPzs7NzczLy8rKycnIx8fGxsXFxMTDw8LCwcHAwL+/vr69vby8u7u7urq5ubi4uLe3tra2tbW1tLS0s7OzsrKysbGxsLCwsK+vr66urq6tra2trKysrKyrq6urq6qqquHg39/e3dzc29ra2djY19bW1dTU09LS0dDQz87Ozc3My8vKysnJyMfHxsbFxcTEw8LCwcHAwL+/vr6+vb28vLu7urq6ubm4uLe3t7a2trW1tLS0s7OzsrKysbGxsbCwsK+vr6+urq6ura2traysrKyrq6urq6qqqqrh4N/f3t3d3Nva2tnY2NfW1tXU1NPS0tHQ0M/Ozs3NzMvLysrJyMjHx8bGxcTEw8PCwsHBwMC/v76+vb28vLu7u7q6ubm4uLi3t7a2trW1tbS0tLOzs7KysrGxsbCwsK+vr6+urq6ura2traysrKyrq6urq6qqqqqq4eDf397d3dzb2trZ2NjX1tbV1NPT0tLR0NDPzs7NzMzLy8rJycjIx8bGxcXExMPDwsLBwMC/v76+vr29vLy7u7q6ubm5uLi3t7e2trW1tbS0tLOzs7KysrGxsbCwsK+vr6+urq6ura2traysrKyrq6urq6qqqqqqqeHg39/e3d3c29ra2djX19bV1dTT09LR0dDPz87NzczMy8rKycjIx8fGxsXExMPDwsLBwcDAv7++vr29vLy7u7q6ubm5uLi3t7e2trW1tbS0tLOzsrKysrGxsbCwsK+vr6+urq6tra2trKysrKyrq6urqqqqqqqqqanh4N/f3t3c3Nva2dnY19fW1dTU09LS0dDQz87OzczMy8vKycnIx8fGxsXFxMPDwsLBwcDAv7++vr29vLy7u7q6ubm5uLi3t7a2trW1tLS0s7OzsrKysbGxsLCwr6+vr66urq6tra2trKysrKurq6urqqqqqqqpqamp4eDf397d3Nvb2tnZ2NfW1tXU1NPS0dHQz8/Ozc3My8vKysnIyMfGxsXFxMPDwsLBwcDAv7++vr29vLy7u7q6ubm4uLe3t7a2tbW1tLS0s7OysrKxsbGwsLCwr6+vrq6urq2tra2srKysq6urq6qqqqqqqqmpqampqOHg397e3dzb2trZ2NjX1tXV1NPS0tHQ0M/Ozs3MzMvKysnIyMfGxsXFxMPDwsLBwcDAv76+vb28vLu7urq5ubm4uLe3tra2tbW0tLSzs7KysrGxsbCwsLCvr6+urq6ura2trKysrKyrq6urqqqqqqqpqampqaioqKjg4N/e3d3c29rZ2djX1tbV1NPT0tHR0M/Ozs3MzMvKysnIyMfGxsXFxMPDwsLBwMC/v76+vb28vLu7urq5ubi4t7e2tra1tbS0tLOzsrKysbGxsLCwr6+vrq6urq2tra2srKysq6urq6qqqqqqqampqamoqKioqKio4N/f3t3c29va2djX19bV1NTT0tHR0M/Pzs3MzMvKysnIyMfGxsXExMPDwsHBwMC/v769vby8u7u6urm5uLi3t7a2trW1tLSzs7OysrKxsbGwsLCvr6+urq6tra2trKysrKurq6uqqqqqqqmpqampqKioqKiop6enp+Df3t3d3Nva2dnY19bV1dTT0tLR0M/Pzs3MzMvKysnIyMfGxsXExMPCwsHBwL+/vr69vLy7u7q6ubm4uLe3tra1tbW0tLOzsrKysbGxsLCwr6+vrq6ura2trKysrKurq6uqqqqqqqmpqampqKioqKiop6enp6enp6bg397d3Nvb2tnY19bW1dTT09LR0M/Pzs3MzMvKysnIx8fGxcXEw8PCwcHAv7++vr28vLu7urq5ubi4t7e2trW1tLSzs7OysrGxsbCwr6+vrq6urq2traysrKyrq6uqqqqqqqmpqampqKioqKinp6enp6enpqampqam397d3dzb2tnY2NfW1dTT09LR0M/Pzs3MzMvKycnIx8bGxcTEw8LCwcDAv76+vb28u7u6urm4uLe3tra1tbS0s7OzsrKxsbCwsK+vr66urq2traysrKurq6uqqqqqqampqamoqKioqKenp6enp6ampqampqampaWlpd/e3dzb2tnZ2NfW1dTU09LR0M/Pzs3My8vKycjIx8bFxcTDwsLBwMC/vr69vLy7u7q5ubi4t7e2tbW0tLOzs7KysbGwsK+vr66urq2traysrKurq6qqqqqpqampqaioqKiop6enp6empqampqampaWlpaWlpaWlpKTe3dzb29rZ2NfW1dTU09LR0M/Pzs3My8rKycjHx8bFxMPDwsHBwL++vr28vLu6urm5uLe3tra1tLSzs7KysbGwsLCvr66urq2trKysq6urqqqqqqmpqamoqKiop6enp6enpqampqampaWlpaWlpaWkpKSkpKSkpKSk3t3c29rZ2NfW1dXU09LR0M/Ozs3My8rJycjHxsXFxMPCwcHAv76+vby8u7q5ubi4t7a2tbS0s7OysrGxsLCvr66ura2trKyrq6uqqqqpqampqKioqKenp6enpqampqalpaWlpaWlpKSkpKSkpKSko6Ojo6Ojo6Ojo93c29rZ2NfX1tXU09LR0M/Ozc3My8rJyMfHxsXEw8LCwcC/vr69vLu7urm4uLe2trW0tLOzsrGxsLCvr66ura2srKyrq6qqqqmpqaioqKenp6empqampqWlpaWlpKSkpKSkpKSjo6Ojo6Ojo6Ojo6KioqKioqKioqLc29ra2djX1tXU09LR0M/OzczLy8rJyMfGxcTDw8LBwL++vr28u7q6ubi3t7a1tLSzsrKxsbCvr66ura2srKurqqqpqamoqKinp6empqampaWlpaSkpKSkpKOjo6Ojo6OioqKioqKioqKioqKioaGhoaGhoaGhoaGh3Nva2djX1tXU09LR0M/OzczLysnIx8fGxcTDwsHAv76+vby7urm4uLe2tbW0s7KysbCwr66uraysq6uqqqmpqKinp6empqalpaWkpKSko6Ojo6OioqKioqKioaGhoaGhoaGhoaGhoaGhoKCgoKCgoKCgoKCgoKCgoNva2djX1tXU09LR0M/OzczLysnIx8bFxMPCwcC/vr69vLu6ubi3tra1tLOysbGwr66uraysq6qqqamoqKenpqalpaSkpKOjo6KioqKioaGhoaGgoKCgoKCgoKCgoJ+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5/a2djX1tXU09LR0M/OzczLysnIx8bFxMPCwcC/vr28u7q5uLe2tbSzsrGxsK+ura2sq6qqqaiop6ampaWkpKOjoqKioaGhoKCgoJ+fn5+fnp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6e2tnY19bU09LR0M/OzczLysnIx8XEw8LBwL++vby7urm4t7a1tLOysbCvrq2sq6qqqainpqalpKSjoqKhoaCgn5+fnp6enZ2dnZ2cnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJ2dnZ2dnZ2dnZ2dnZ2dndnY19bV1NPR0M/OzczLysnHxsXEw8LBwL69vLu6ubi3trWzsrGwr66trKuqqainpqWlpKOioaGgn5+enp2dnJybm5uampqamZmZmZmZmZmZmZmZmZmZmZmZmZmampqampqampqbm5ubm5ubm5ucnJycnJycnJycnJ3Z19bV1NPS0dDOzczLysnHxsXEw8LAv769vLq5uLe2tbOysbCvrqyrqqmop6alpKOioaCfnp2dnJuampmZmJiXl5eWlpaWlpaWlpaWlpaWlpaWlpaWlpeXl5eXl5iYmJiYmJmZmZmZmZqampqampqbm5ubm5ubm5yc2NfW1dPS0dDPzszLysnIxsXEw8HAv768u7q5t7a1tLKxsK+trKupqKempaOioaCfnp2bmpqZmJeWlZWUlJOTkpKSkpGRkZGRkZGSkpKSkpKTk5OTlJSUlJWVlZWWlpaWl5eXl5eYmJiYmJmZmZmZmpqampqampubm9jW1dTT0tDPzs3LysnIx8XEw8HAv768u7q4t7a0s7Kwr62sq6mopqWkoqGgnp2cmpmYlpWUk5KRkJCPjo6NjYyMjIyMjIyMjI2NjY2Ojo6Pj5CQkJGRkZKSk5OTlJSUlJWVlZaWlpaXl5eXmJiYmJmZmZmZmZqamprX1tXT0tHQz83My8nIx8bEw8LAv768u7q4t7W0s7Gwrq2rqqinpaOioJ+dnJqYl5WUkpGPjo2MiomIiIeGhoaFhYWFhoaGh4eHiIiJioqLi4yMjY2Ojo+PkJCRkZKSkpOTlJSUlZWVlpaWlpeXl5eYmJiYmJmZmZmZ19XU09LRz87Ny8rJyMbFxMLBv769u7q4t7W0srGvrqyrqaempKKhn52bmZiWlJKQjoyKiYeFg4KBf35+fX18fH19fX5/f4CBgoODhIWGh4iIiYqLi4yNjY6Oj4+QkJGRkpKTk5OUlJSVlZWWlpaXl5eXmJiYmJiZmdbV1NPR0M/OzMvKyMfGxMPCwL+9vLq5t7a0s7GwrqyrqaempKKgnpyamJaUko+Ni4iGhIF/fHp3dXNycXBwcHBxcnN1dnh5e3x9f4CBgoOEhYaHiImKi4uMjY2Oj4+QkJGRkpKSk5OUlJSVlZWWlpaWl5eXl5iYmJjW1dTT0dDPzczLycjHxcTDwcC+vbu6uLe1tLKwr62rqqimpKKgnpyamJaTkY+MiYaDgH16dnJuamZiX1xbW11fYmVoa25wc3V3eXt8fn+BgoOEhYaHiImKi4uMjY2Oj4+QkJGRkpKTk5OUlJSVlZWWlpaWl5eXl5iY1tXU0tHQz83My8nIx8XEwsG/vr27uri2tbOysK6tq6mnpaSioJ2bmZeVkpCNioeEgX15dXFsZl9XTUAvIC4+SlNaX2RobG9ydHZ5enx+f4GCg4SFh4eIiYqLjIyNjo6Pj5CQkZGSkpOTk5SUlJWVlZaWlpaXl5eXmNbV1NPR0M/NzMvJyMfFxMLBv769u7q4trWzsrCuraupp6akoqCenJmXlZKQjYuIhYJ+e3dzbmlkXlhSTktNUFVaX2Nnam1wc3V3eXt9foCBgoOEhoeHiImKi4uMjY2Oj4+QkJGRkpKSk5OUlJSVlZWVlpaWl5eXl5fX1dTT0dDPzszLycjHxcTDwcC+vbu6uLe1tLKxr62sqqimpKOhn52bmZaUkpCNi4iFg4B9end0cW9samloZ2hpamxucHJ0dXd5enx9f4CBgoSFhoeHiImKi4uMjY2Ojo+PkJCRkZKSk5OTlJSUlZWVlZaWlpaXl5eX19bU09LQz87Ny8rJx8bEw8LAv728u7m4trWzsbCuraupqKakoqGfnZuZl5WTkY+Ni4mHhIKAfn17enh3d3Z2dnd3eHl6e3x9fn+AgYKDhIWGh4iIiYqKi4yMjY6Oj4+QkJCRkZKSkpOTlJSUlJWVlZaWlpaXl5eXl9fW1dPS0dDOzczKycjGxcTCwcC+vbu6ube2tLOxsK6tq6mopqWjoaCenJqZl5WUkpCOjYuKiIeGhIOCgoGBgICAgIGBgYKCg4OEhYWGh4eIiYmKiouMjI2Njo6Pj5CQkJGRkpKSk5OTlJSUlZWVlZaWlpaXl5eXl5jY1tXU09HQz87My8rIx8bFw8LBv768u7q4t7W0s7Gwrq2rqqinpaSioZ+enJuZmJeVlJORkI+OjYyLiomJiIiIh4eHh4eIiIiIiYmKioqLi4yMjY2Njo6Pj4+QkJGRkZKSkpOTk5SUlJSVlZWVlpaWlpeXl5eXl5iY2NfW1dPS0dDOzczLycjHxcTDwsC/vry7uri3trSzsrCvrqyrqainpaSjoaCfnZybmpmXlpWUk5KSkZCQj46Ojo2NjY2NjY2NjY2NjY6Ojo6Pj4+PkJCQkZGRkpKSkpOTk5OUlJSUlZWVlZaWlpaWl5eXl5eYmJiYmNnY1tXU09LQz87Ny8rJyMbFxMPBwL++vLu6ube2tbOysbCurayrqainpqWjoqGgn56dnJuamZiXl5aVlZSTk5OSkpKRkZGRkZGRkZGRkZGRkZKSkpKSk5OTk5OTlJSUlJWVlZWVlZaWlpaWl5eXl5eXmJiYmJiYmJna2NfW1dTS0dDPzszLysnIxsXEw8HAv769u7q5uLe1tLOysa+urayrqqmnpqWko6KhoJ+fnp2cm5uamZmYmJeXlpaWlZWVlZWUlJSUlJSUlJSUlJSUlJWVlZWVlZWVlpaWlpaWlpeXl5eXl5eXmJiYmJiYmJiZmZmZ2tnY19bU09LR0M7NzMvKycfGxcTDwsC/vr28u7m4t7a1tLOysK+urayrqqmop6alpKSjoqGgoJ+enp2cnJubmpqZmZmYmJiYl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eYmJiYmJiYmJiYmZmZmZmZmZmZmdva2dfW1dTT0tHPzs3My8rJx8bFxMPCwb++vby7urm4t7a1tLKxsK+ura2sq6qpqKempqWko6OioaGgn5+enp2dnJycm5ubmpqampmZmZmZmZmZmZiYmJiYmJiYmJiYmJiYmJmZmZmZmZmZmZmZmZmZmZmampqamprc29nY19bV1NPR0M/OzczLysjHxsXEw8LBwL++vbu6ubi3trW0s7KxsbCvrq2sq6qqqainp6alpKSjo6KhoaCgn5+fnp6dnZ2dnJycm5ubm5ubmpqampqampqampqampqampqampqampqampqampqampqampqampqa3Nva2djX1tTT0tHQz87NzMvJyMfGxcTDwsHAv769vLu6ubi3trW0s7KxsbCvrq2srKuqqamop6empaWkpKOjoqKhoaCgoJ+fn56enp2dnZ2dnJycnJycm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm93c29rZ19bV1NPS0dDPzs3MysnIx8bFxMPCwcC/vr28u7q5uLi3trW0s7KxsbCvrq2trKurqqmpqKenpqalpaSko6OioqGhoaCgoJ+fn5+enp6enZ2dnZ2dnJycnJycnJycnJybm5ubm5ubm5ubm5ubm5ubm5ubm5ve3dva2djX1tXU09LR0M/NzMvKycjHxsXEw8LBwL++vb28u7q5uLe2tbW0s7KxsbCvrq6trKyrqqqpqKinp6ampaWkpKOjo6KioaGhoaCgoJ+fn5+enp6enp6dnZ2dnZ2dnZycnJycnJycnJycnJycnJycnJycnJyc3t3c29rZ2NfW1dPS0dDPzs3My8rJyMfGxcTDwsHAv7++vby7urm4t7e2tbSzs7KxsLCvrq6trKyrqqqpqaiop6empqWlpKSko6OioqKhoaGhoKCgoJ+fn5+enp6enp6enZ2dnZ2dnZ2dnZycnJycnJycnJycnJycnN/e3dza2djX1tXU09LR0M/OzczLysnIx8bFxMPCwcC/v769vLu6ubi4t7a1tLSzsrKxsK+vrq2trKyrqqqpqaiop6empqWlpaSko6OjoqKioaGhoaCgoKCgn5+fn5+enp6enp6enZ2dnZ2dnZ2dnZ2dnZ2cnJycnJzf3t3c29rZ2NfW1dTT0tHQz87NzMvKycjHxsXEw8LBwL++vr28u7q5ubi3trW1tLOysrGwsK+urq2trKurqqqpqaiop6empqWlpaSkpKOjo6KioqGhoaGgoKCgoJ+fn5+fn56enp6enp6enZ2dnZ2dnZ2dnZ2dnZ2d4N/e3dva2djX1tXU09LR0M/OzczLysnIx8bFxMTDwsHAv769vLy7urm4uLe2tbW0s7KysbCwr66ura2srKuqqqmpqKinp6empqWlpaSkpKOjo6KioqGhoaGgoKCgoJ+fn5+fn5+enp6enp6enp6dnZ2dnZ2dnZ2dneDf3t3c29rZ2NfW1dTT0tHQz87NzMvKycjHxsXEw8LBwMC/vr28u7q6ubi3t7a1tLSzsrKxsLCvrq6trayrq6qqqamoqKinp6ampaWlpKSko6OjoqKioqGhoaGgoKCgoJ+fn5+fn5+enp6enp6enp6dnZ2dnZ2dnZ3h397d3Nva2djX1tXU09LR0M/OzczLysnIx8bFxMPDwsHAv769vLy7urm4uLe2tbW0s7OysbGwr6+ura2srKurqqqpqaiop6enpqalpaWkpKSjo6OioqKioaGhoaCgoKCgn5+fn5+fn56enp6enp6enp6dnZ2dnZ2d4eDf3t3b2tnY19bV1NPS0dDPzs3My8rJyMfGxcXEw8LBwL++vb28u7q5ubi3tra1tLOzsrGxsK+vrq6trKyrq6qqqamoqKenp6ampaWlpKSko6OjoqKioqGhoaGgoKCgoKCfn5+fn5+fnp6enp6enp6enp2dnZ2dneHg397d3Nva2dfW1dTT0tHQz87NzMvKycjHxsbFxMPCwcC/vr29vLu6ubm4t7a2tbSzs7KxsbCvr66uraysq6uqqqmpqKinp6ampqWlpaSkpKOjo6KioqKhoaGhoKCgoKCfn5+fn5+fnp6enp6enp6enp6dnZ2dnZ3h4N/e3dzb2tnY19XU09LR0M/OzczLysnIx8bFxcTDwsHAv769vLy7urm4uLe2tbW0s7KysbCwr66ura2srKuqqqmpqKinp6empqWlpaSkpKOjo6KioqKhoaGhoKCgoKCfn5+fn5+fnp6enp6enp6enp6dnZ2dnZ2d4eDf3t3c29rZ2NfV1NPS0dDPzs3My8rJyMfGxcTDwsLBwL++vby7urq5uLe2trW0s7OysbGwr6+ura2srKuqqqmpqKinp6empqWlpaSkpKOjo6KioqGhoaGhoKCgoKCfn5+fn5+fnp6enp6enp6enp2dnZ2dnZ2dneHg397d3Nva2djW1dTT0tHQz87NzMvKycjHxsXEw8LBwL++vb28u7q5uLe3trW0s7OysbGwr6+ura2sq6uqqqmpqKinp6ampaWlpKSko6OjoqKioaGhoaCgoKCgn5+fn5+fn56enp6enp6enp6dnZ2dnZ2dnZ2dnZ3h4N/e3dzb2tnX1tXU09LR0M/OzczLysnHxsXEw8PCwcC/vr28u7q5uLe3trW0s7OysbCwr66uraysq6qqqamoqKenpqalpaWkpKOjo6KioqGhoaGgoKCgoJ+fn5+fn56enp6enp6enp2dnZ2dnZ2dnZ2dnZ2dnZ2d4eDf3t3c29rY19bV1NPS0dDOzczLysnIx8bFxMPCwcC/vr28u7q5uLe3trW0s7KysbCvrq6trKyrqqqpqaiop6ampaWlpKSjo6OioqKhoaGgoKCgn5+fn5+fnp6enp6enp6dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dneHg397d3NrZ2NfW1dTT0dDPzs3My8rJx8bFxMPCwcC/vr28u7q5uLe2tbS0s7KxsK+vrq2srKuqqqmoqKenpqWlpKSko6OioqKhoaGgoKCfn5+fn56enp6enp2dnZ2dnZ2dnZ2dnZ2cnJycnJycnJycnJycnJycnJzh4N/e3dva2djX1tTT0tHQz87My8rJyMfGxcPCwcC/vr28u7q5uLe2tbSzsrGwr6+urayrq6qpqKinp6alpaSko6OioqGhoaCgoJ+fn56enp6enZ2dnZ2dnZ2cnJycnJycnJycnJycnJycnJycnJycnJycnJycnJyc4eDf3tzb2tnY1tXU09LRz87NzMvJyMfGxcTDwcC/vr28u7q5uLa1tLOysbCvr66trKuqqamop6ampaSko6OioqGhoKCfn5+enp6dnZ2dnZycnJycnJybm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ucnJycnOHg397c29rZ19bV1NLR0M/OzMvKycjGxcTDwsC/vr28urm4t7a1tLOysa+uraysq6qpqKempaWko6KioaGgn5+enp6dnZ2cnJybm5ubm5uampqampqampqampqampqampqampqampqampqbm5ubm5ubm5ubm5ubm5vh4N/d3Nva2NfW1dPS0dDOzczLycjHxcTDwsC/vr27urm4t7W0s7KxsK6trKuqqainpqWko6KioaCfn56enZycm5ubmpqamZmZmZmZmJiYmJiYmJiYmJiYmJiYmZmZmZmZmZmZmZmZmpqampqampqampqbm5ubm5ub4eDe3dzb2djX1tTT0tDPzszLysnHxsXDwsG/vr27urm3trW0srGwr62sq6qop6alpKOioaCfnp2dnJuampmZmJiYl5eXlpaWlpaWlpaWlpaWlpaWlpaWl5eXl5eXl5iYmJiYmJiZmZmZmZmZmZqampqampqampubm+Hg3t3c2tnY19XU09HQz83My8nIxsXEwsHAvr27urm3trSzsrCvrqyrqainpaSjoqGfnp2cm5qZmJeXlpWVlJSUk5OTk5OSkpKSk5OTk5OTk5SUlJSUlZWVlZWWlpaWl5eXl5eYmJiYmJiZmZmZmZmampqampqampvh4N7d3NrZ2NbV1NLR0M7Ny8rJx8bEw8HAv728urm3trSzsbCurauqqKelpKKhn56cm5qZl5aVlJOSkZGQj4+Pjo6Ojo6Ojo6Oj4+Pj5CQkJGRkZKSkpOTk5SUlJWVlZWWlpaWl5eXl5iYmJiYmZmZmZmZmpqampqa4eDe3dza2djW1dPS0c/OzMvKyMfFxMLBv768u7m4trSzsa+urKupp6WkoqCfnZuamJaVk5KQj46NjIuKiYmIiIiIiIiIiYmJioqLi4yMjY2Ojo+PkJCRkZKSk5OTlJSUlZWVlpaWl5eXl5iYmJiYmZmZmZmampqamuHg393c2tnY1tXT0tHPzszLycjGxcPCwL+9u7q4trWzsbCurKqpp6WjoZ+dm5mXlZORj42LiYeGhIOCgYCAf3+AgICBgoKDhIWGhoeIiYqKi4yNjY6Pj5CQkZGSkpOTlJSUlZWVlpaWl5eXl5iYmJiZmZmZmZqamprh4N/d3NvZ2NbV1NLRz87My8nIxsXDwcC+vbu5uLa0srCvraupp6WjoZ+cmpiVk5COi4mGg4F+fHl3dnRzc3N0dXZ3eHp7fX6AgYKEhYaHiImKi4yMjY6Pj5CQkZGSk5OTlJSVlZWWlpaXl5eYmJiYmZmZmZmampqa4uDf3tzb2djX1dTS0c/OzMvJyMbFw8HAvry7ube1tLKwrqyqqKakop+dmpiVk5CNioaDf3x4c29qZmJfXl5gYmZpbG9ydXd5e31/gYKEhYaHiYqKi4yNjo+PkJGRkpKTk5SUlZWVlpaWl5eXmJiYmJmZmZmampqamuLh397d29rY19bU09HQzs3LysjHxcPCwL69u7m3trSysK6sqqimpKGfnJqXlZKPi4iEgHx4cmxlXVNFLg4tQk9YX2VqbnF1d3p8foCBg4SGh4iJiouMjY6Pj5CRkZKSk5OUlJWVlpaWl5eXmJiYmJmZmZmampqampvj4eDf3dza2djW1dPS0M/NzMrJx8bEwsG/vby6uLa1s7Gvraupp6SioJ6bmZaTkI2Kh4N/e3dybWhiXVlXWFtfY2drbnF0d3l8fn+Bg4SGh4iJiouMjY6Oj5CRkZKSk5OUlJWVlpaWl5eXmJiYmZmZmZqampqam5ub4+Lh397d29rY19XU09HQzs3LysjGxcPCwL69u7m4trSysK6sqqimpKKgnpuZlpSRj4yJhoOAfnt4dnRycXFxcnN1dnh6e31/gIKDhIaHiImKi4yNjo6PkJCRkpKTk5SUlZWWlpaXl5eYmJiZmZmZmpqampqbm5ubm+Tj4uDf3dzb2djW1dPS0c/OzMvJyMbEw8HAvry7ube2tLKwr62rqaelo6GfnZuZl5WSkI6MioiGhYOCgYCAgICAgIGCgoOEhYaHiImKi4uMjY6Oj5CQkZKSk5OUlJWVlpaWl5eXmJiYmZmZmZqampqbm5ubm5ucnJzl5OLh4N7d3NrZ19bV09LQz83MysnHxsTDwcC+vbu5uLa1s7Gwrqyqqaelo6KgnpybmZeWlJKRkI+NjIyLioqKioqKioqLi4yMjY2Ojo+PkJCRkpKTk5OUlJWVlpaWl5eXmJiYmZmZmZqampqbm5ubm5ucnJycnJyd5uXj4uHf3t3b2tnX1tTT0tDPzczLycjGxcPCwL+9vLq5t7a0s7GvrqyrqaimpaOioJ+dnJuamJeWlZSUk5OSkpGRkZGRkZGRkpKSkpOTk5SUlJWVlZaWlpeXl5iYmJmZmZmampqampubm5ubnJycnJycnZ2dnZ2dnefm5OPi4N/e3Nva2NfW1NPS0M/OzMvJyMfFxMLBwL69u7q4t7a0s7Gwr62sqqmopqWko6Khn56enZybmpqZmZiYl5eXl5eXl5eXl5eXl5eXmJiYmJiZmZmZmZqampqam5ubm5ucnJycnJycnZ2dnZ2dnZ2enp6enp7o5+Xk4+Lg397c29rY19bV09LRz87Ny8rJx8bFw8LBv769u7q5t7a1s7KxsK6trKuqqainpqWko6KhoaCfn56enZ2cnJycm5ubm5ubm5ubm5ubm5ubm5ycnJycnJycnJ2dnZ2dnZ2dnZ6enp6enp6enp6en5+fn5+f6ejn5eTj4uDf3tzb2tnX1tXU0tHQzs3My8nIx8XEw8LAv769u7q5uLe2tLOysbCvrq2sq6qpqKenpqWlpKOjoqKhoaGgoKCfn5+fn5+enp6enp6enp6enp6enp6enp6fn5+fn5+fn5+fn5+fn5+fn5+foKCgoKCgoOrp6Ofl5OPi4N/e3dva2djW1dTT0dDPzs3LysnIxsXEw8LBv769vLu6ubi3tbSzsrKxsK+urayrq6qpqainp6ampaWkpKSjo6OjoqKioqKhoaGhoaGhoaGhoaGgoKCgoKCgoKCgoKCgoKCgoaGhoaGhoaGhoaGhoaHr6uno5uXk4+Lg397d3NrZ2NfW1NPS0dDOzczLysnIxsXEw8LBwL++vby7urm4t7a1tLOysbGwr66uraysq6qqqamoqKinp6ampqWlpaWkpKSkpKOjo6Ojo6Ojo6KioqKioqKioqKioqKioqKioqKioqKioqKioqKi7Ovq6ejm5eTj4uHf3t3c29rY19bV1NPR0M/OzczLysnHxsXEw8LBwL++vby7urq5uLe2tbS0s7KysbCvr66ura2srKurqqqpqamoqKinp6enpqampqWlpaWlpaWkpKSkpKSkpKSko6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo+7s6+rp6Ofl5OPi4eDe3dzb2tnY19XU09LR0M/OzczLysnIx8bFxMPCwcC/vr28u7q6ubi3t7a1tLSzsrKxsbCvr66ura2srKyrq6uqqqqpqamoqKiop6enp6empqampqalpaWlpaWlpaWkpKSkpKSkpKSkpKSko6Pv7ezr6uno5+Xk4+Lh4N/e3Nva2djX1tXU09LR0M/OzczLysnIx8bFxMPCwcC/v769vLu7urm4uLe2trW0tLOysrGxsLCvr66urq2trKysq6urqqqqqqmpqamoqKioqKenp6enp6ampqampqalpaWlpaWlpaWlpKSk8O/t7Ovq6ejn5uTj4uHg397d3Nva2NfW1dTT0tHQz87NzMvKycnIx8bFxMPCwsHAv76+vby7u7q5uLi3t7a1tbS0s7OysrGxsLCvr66urq2traysrKurq6uqqqqqqampqaioqKioqKenp6enp6ampqampqampaWlpfHw7u3s6+rp6Ofm5OPi4eDf3t3c29rZ2NfW1dTT0tHQz87NzMvKycnIx8bFxMPDwsHAv7++vb28u7u6ubm4t7e2trW1tLSzs7KysbGwsLCvr66urq2traysrKyrq6uqqqqqqqmpqampqKioqKinp6enp6enpqampqby8O/u7ezr6uno5+bl4+Lh4N/e3dzb2tnY19bV1NPS0dDQz87NzMvKycjIx8bFxMTDwsHBwL++vr28vLu6urm5uLe3tra1tbS0s7OysrKxsbCwsK+vr66urq2traysrKurq6uqqqqqqqmpqampqKioqKiop6enp6en8vHw7+7t7Ovq6ejn5uXj4uHg397d3Nva2djX19bV1NPS0dDPzs3NzMvKycjIx8bFxMTDwsHBwL+/vr29vLu7urq5ubi3t7a2tbW0tLOzs7KysbGxsLCvr6+urq6ura2trKysrKurq6uqqqqqqampqampqKioqKinp/Py8fDv7u3s6+rp6Ofm5OPi4eDf3t3c3Nva2djX1tXU09LR0NDPzs3My8vKycjHx8bFxMTDwsHBwL+/vr69vLy7u7q5ubi4t7e2trW1tLSzs7OysrGxsbCwsK+vr66urq2tra2srKyrq6urq6qqqqqpqampqaioqKj08/Lx8O/u7ezr6ejn5uXk4+Lh4N/e3d3c29rZ2NfW1dTT0tLR0M/Ozc3My8rJycjHxsbFxMPDwsHBwL+/vr69vLy7u7q6ubi4t7e2tra1tbS0s7OzsrKxsbGwsLCvr6+urq6tra2trKysrKurq6uqqqqqqqmpqamp9fTz8vHv7u3s6+rp6Ofm5eTj4uHg397d3Nzb2tnY19bV1NPT0tHQz87OzczLysrJyMfHxsXFxMPCwsHBwL+/vr29vLy7u7q6ubi4uLe3tra1tbS0s7OzsrKysbGwsLCvr6+urq6ura2trKysrKurq6urqqqqqqmpqfX08/Lx8O/u7ezr6uno5+bl5OPi4eDf3t3c29va2djX1tXU09PS0dDPz87NzMvLysnIyMfGxcXEw8PCwcHAwL++vr29vLy7urq5ubi4t7e2tra1tbS0s7OzsrKysbGwsLCvr6+vrq6ura2traysrKurq6urqqqqqqr29fTz8vHw7+7t7Ovq6ejn5uXk4+Lh4N/e3dzb2tnZ2NfW1dTT09LR0M/Ozs3My8vKycjIx8bGxcTEw8LCwcDAv7++vb28vLu7urq5ubi4t7e2trW1tbS0s7OzsrKxsbGwsLCvr6+urq6ura2trKysrKurq6urqqqq9vX08/Lx8O/u7ezr6uno5+bl5OPi4eDg397d3Nva2djX19bV1NPS0tHQz87OzczLy8rJyMjHxsbFxMTDwsLBwMC/v76+vby8u7u6urm5uLi3t7a2trW1tLSzs7OysrKxsbCwsLCvr6+urq6tra2trKysrKurq6uqqvf29fTz8vHw7+7t7Ovq6ejn5uXk4+Lh4N/e3dzb29rZ2NfW1dXU09LR0NDPzs3NzMvKysnIyMfGxcXEw8PCwsHAwL+/vr29vLy7u7q6ubm4uLe3tra2tbW0tLOzs7KysrGxsbCwsK+vr66urq2tra2srKysq6urq6r39vX08/Lx8O/u7ezr6uno5+bl5OPi4eDf397d3Nva2djX19bV1NPS0tHQz8/OzczLy8rJycjHx8bFxcTDw8LBwcDAv76+vb28vLu7urq5ubi4t7e2trW1tbS0s7OzsrKxsbGwsLCvr6+vrq6ura2traysrKyrq6ur+Pb19PPy8fDv7u3s6+rp6Ofm5eTj4+Lh4N/e3dzb2tnZ2NfW1dTU09LR0NDPzs3MzMvKysnIx8fGxcXEw8PCwsHAwL+/vr29vLy7u7q6ubm4uLe3tra2tbW0tLSzs7KysrGxsbCwsK+vr66urq2tra2srKysq6urq/j39vX08/Hw7+7t7Ovq6ejn5+bl5OPi4eDf3t3c29va2djX1tXV1NPS0dDQz87NzczLysrJyMjHxsbFxMTDwsLBwMC/v76+vby8u7u6urm5uLi3t7e2trW1tLS0s7OysrKxsbGwsLCvr6+urq6ura2trKysrKurq6v49/b19PPy8fDv7u3s6+rp6Ofm5eTj4uHg397d3Nvb2tnY19bV1dTT0tHQ0M/Ozc3My8rKycjIx8bGxcTEw8LCwcDAv7++vr28vLu7urq5ubi4t7e3tra1tbS0tLOzsrKysbGxsLCwr6+vrq6ura2traysrKyrq6ur+Pf29fTz8vHw7+7t7Ovq6ejn5uXk4+Lh4N/e3dzb2trZ2NfW1dTU09LR0NDPzs3NzMvKysnIx8fGxcXEw8PCwsHAwL+/vr29vLy7u7q6ubm4uLe3tra1tbW0tLOzs7KysbGxsLCwr6+vrq6urq2traysrKyrq6urq/j39vX08/Lx8O7t7Ovq6ejn5uXl5OPi4eDf3t3c29rZ2djX1tXU09PS0dDPz87NzMvLysnJyMfGxsXExMPCwsHBwL+/vr69vby7u7q6ubm4uLe3t7a2tbW0tLSzs7KysrGxsbCwsK+vr66urq2tra2srKysq6urq6r49/b19PPx8O/u7ezr6uno5+bl5OPi4eDg397d3Nva2djX1tbV1NPS0dHQz87NzczLysrJyMfHxsXFxMPDwsHBwMC/vr69vby8u7q6ubm4uLe3t7a2tbW0tLSzs7KysrGxsbCwr6+vr66urq2traysrKyrq6urq6qq+Pf29PPy8fDv7u3s6+rp6Ofm5eTj4uHg397d3Nva2tnY19bV1NPT0tHQz87OzczLy8rJyMjHxsXFxMPDwsHBwMC/vr69vby8u7q6ubm4uLe3tra2tbW0tLOzs7KysbGxsLCwr6+vrq6ura2traysrKyrq6urqqqqqvf29fTz8vHw7+7t7Ovq6ejn5uXk4+Lh4N/e3dzb2tnY19bV1dTT0tHQz8/OzczLy8rJyMjHxsXFxMPDwsHBwL+/vr69vLy7u7q6ubm4uLe3tra1tbS0tLOzsrKysbGwsLCvr6+urq6ura2trKysrKurq6uqqqqqqan39vX08/Lx7+7t7Ovq6ejn5uXk4+Lh4N/e3dzb2tnY19fW1dTT0tHQ0M/OzczLy8rJyMjHxsXFxMPDwsHBwL+/vr29vLy7urq5ubi4t7e2trW1tbS0s7OysrKxsbCwsK+vr66urq2tra2srKysq6urq6qqqqqpqamp9/b18/Lx8O/u7ezr6uno5uXk4+Lh4N/e3dzb2tnZ2NfW1dTT0tHQz8/OzczLysrJyMfHxsXExMPCwsHAwL++vr28vLu7urm5uLi3t7a2tbW0tLSzs7KysbGxsLCwr6+vrq6ura2trKysrKurq6uqqqqqqampqamoqPb19PPy8fDu7ezr6uno5+bl5OPi4eDf3t3c29rZ2NfW1dTT0tHQz87OzczLysnJyMfGxcXEw8LCwcDAv76+vby8u7u6ubm4uLe3tra1tbS0s7OysrKxsbCwsK+vr66urq2traysrKyrq6urqqqqqqmpqampqKioqKj29fTy8fDv7u3s6+no5+bl5OPi4eDf3t3c29rZ2NfW1dTT0tHQz87NzMvLysnIx8bGxcTDw8LBwMC/vr69vLy7urq5ubi4t7a2tbW0tLOzs7KysbGwsLCvr6+urq6tra2srKyrq6urqqqqqqmpqampqKioqKinp6en9fTz8vHv7u3s6+rp6Obl5OPi4eDf3t3c29rY19bV1NPS0tHQz87NzMvKycjIx8bFxMPDwsHAwL++vb28u7u6ubm4uLe3trW1tLSzs7KysrGxsLCvr6+urq6tra2srKyrq6urqqqqqqmpqamoqKioqKenp6enp6ampvXz8vHw7+7s6+rp6Ofl5OPi4eDf3t3c2tnY19bV1NPS0dDPzs3My8rJycjHxsXEw8PCwcC/v769vLy7urq5uLi3t7a1tbS0s7OysrGxsLCvr6+urq6tra2srKyrq6uqqqqqqampqaioqKiop6enp6enpqampqampaX08/Hw7+7t7Orp6Ofm5OPi4eDf3t3b2tnY19bV1NPS0dDPzs3My8rJyMfGxcTDwsLBwL++vb28u7q6ubi4t7a2tbW0s7OysrGxsLCvr6+urq2traysrKurq6qqqqmpqamoqKioqKenp6enpqampqampqWlpaWlpaWk8/Lx7+7t7Ovp6Ofm5ePi4eDf3tzb2tnY19bU09LR0M/OzczLysnIx8bFxMPCwcC/v769vLu6urm4t7e2tbW0tLOysrGxsLCvr66ura2srKyrq6uqqqqpqampqKioqKenp6enpqampqampaWlpaWlpaSkpKSkpKSkpPLx8O/t7Ovq6Ofm5ePi4eDf3dzb2tnY1tXU09LRz87NzMvKycjHxsXEw8LBwL++vby7u7q5uLe2trW0tLOysrGwsK+vrq6traysq6urqqqqqampqKiop6enp6ampqampqWlpaWlpaSkpKSkpKSko6Ojo6Ojo6Ojo6Py8O/u7Ovq6efm5eTi4eDf3dzb2tjX1tXU0tHQz87My8rJyMfGxcTDwcC/vr28vLu6ubi3trW1tLOysrGwr6+urq2trKyrq6qqqamoqKinp6enpqampqWlpaWlpKSkpKSko6Ojo6Ojo6Ojo6KioqKioqKioqKioqKi8e/u7evq6ejm5eTi4eDe3dzb2djX1tTT0tHPzs3MysnIx8bFw8LBwL++vby7urm4t7a1tLOysbGwr66uraysq6uqqamoqKinp6ampqWlpaWkpKSko6Ojo6OjoqKioqKioqKioqGhoaGhoaGhoaGhoaGhoaGhoaGhofDu7ezq6ejm5eTi4eDe3dza2djX1dTT0dDPzczLysjHxsXDwsHAv728u7q5uLe2tbSzsrGwr66trKyrqqmpqKinpqampaWkpKSjo6OioqKioaGhoaGhoaCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKDv7uzr6ejn5eTj4eDf3dza2djW1dTS0c/OzcvKycfGxcPCwcC+vby6ubi3trSzsrGwr66trKuqqaiop6alpaSko6OioqGhoKCgoJ+fn5+fn56enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6e7u3r6ujn5uTj4eDf3dza2djW1dPS0M/OzMvJyMfFxMLBv769u7q5t7a1s7KxsK6trKuqqainpqWko6KioaCgn5+enp2dnZycnJycm5ubm5ubm5ubm5ubm5ubm5ucnJycnJycnJycnJycnJ2dnZ2dnZ2dnZ2dnZ2dne3s6uno5uXj4uDf3dza2djW1dPS0M/NzMrJx8bEw8HAvr27uri3tbSysbCurauqqaimpaSjoqGgn56dnJubmpqZmZiYmJiYl5eXl5eXl5eXmJiYmJiYmJiZmZmZmZmZmpqampqampubm5ubm5ubm5ycnJycnJycnJzs6+ro5+Xk4uHf3tzb2djW1dPS0M/Ny8rIx8XEwsC/vby6uLe1tLKwr62sqqmnpaSjoaCenZybmpmYl5aVlZSUk5OTkpKSkpKSkpOTk5OTlJSUlJWVlZWWlpaWl5eXl5iYmJiYmZmZmZmZmpqampqampubm5ubm5ub7Orp5+bk4+Hg3t3b2tjW1dPS0M/Ny8rIx8XDwsC+vbu5t7a0srCvraupp6akoqCfnZuamJeVlJKRkI+OjY2MjIyMjIyMjIyMjY2Njo6Pj5CQkJGRkpKSk5OUlJSVlZWWlpaWl5eXl5iYmJiYmZmZmZmZmpqampqamuvp6Obl4+Lg393c2tnX1dTS0M/NzMrIx8XDwcC+vLq5t7Wzsa+tq6mnpaOhn52bmZeVk5GPjYuKiIeFhYSDg4ODg4OEhIWFhoeHiImKiouMjI2Njo+PkJCRkZKSk5OTlJSUlZWVlpaWlpeXl5eYmJiYmJmZmZmZmZrq6efm5OPh4N7c29nY1tTT0c/OzMrJx8XDwsC+vLq4t7Wzsa+tqqimpKKfnZuYlpORjouJhoSBf3x6eXd2dnZ2d3h5ent9fn+AgoOEhYaHiImKiouMjY2Oj4+QkJGRkpKSk5OUlJSVlZWWlpaWl5eXl5iYmJiYmZmZ6ujn5eTi4N/d3NrY19XU0tDOzcvJyMbEwsC/vbu5t7Wzsa+tqqimpKGfnJqXlJGOi4iEgX15dXFtaWVjYWFjZWdqbXBydXd5e31+gIGDhIWGh4iJiouLjI2Njo+PkJCRkZKSkpOTlJSUlZWVlZaWlpaXl5eXmJiYmOno5uXj4uDe3dvZ2NbV09HPzszKycfFw8HAvry6uLa0srCuq6mnpaKgnZqYlZKPi4iEgHx3cmxlXVNGNik0RE9XXmRobG9ydXd6fH1/gIKDhIWHh4iJiouMjI2Ojo+PkJCRkZKSkpOTk5SUlJWVlZaWlpaXl5eXl5jp6Obk4+Hg3tzb2dfW1NLRz83MysjGxcPBv727ube1s7GvrauppqSin52al5WSj4uIhIF9eHNuaWNcVlFOT1NYXWJmam1wc3V4ent9f4CBg4SFhoeIiYqKi4yMjY6Oj4+QkJGRkZKSk5OTlJSUlJWVlZWWlpaWl5eX6efm5OPh397c2tnX1tTS0M/Ny8rIxsTDwb+9u7m3tbOxr62rqaeloqCem5mWk5GOi4iFgn98eHVycG1sa2prbG1vcHJ0dnd5e3x+f4CBg4SFhoaHiImKiouMjI2Njo6Pj5CQkZGRkpKTk5OTlJSUlZWVlZaWlpaWl+nn5uTi4d/e3NrZ19XU0tDPzcvKyMbEw8G/vbu6uLa0srCurKqopqSioJ2bmZeUkpCNi4mGhIKAfn17enl5eXl5eXp7e3x9fn+AgYKDhIWFhoeIiImKiouMjI2Njo6Pj4+QkJGRkZKSkpOTk5SUlJSVlZWVlZaWlpbp5+Xk4uHf3tza2dfV1NLQz83LysjGxcPBv768uri3tbOxr62rqqimpKKgnpyamJaUkpGPjYuKiIeGhYSDgoKCgYGCgoKCg4OEhIWFhoeHiIiJiYqKi4uMjI2Njo6Pj4+QkJCRkZGSkpKTk5OTlJSUlJWVlZWVlpaW6efm5OLh397c2tnX1tTS0c/NzMrIx8XDwsC+vbu5uLa0srGvrauqqKako6GfnZyamZeVlJKRkI+NjIuLiomJiIiIiIeHiIiIiIiJiYmJioqLi4uMjIyNjY2Ojo+Pj5CQkJCRkZGSkpKSk5OTk5SUlJSVlZWVlZaWlunn5uTi4d/e3NvZ19bU09HPzszLycfGxMLBv768urm3tbSysK+trKqop6WkoqGfnpybmZiXlpWTkpKRkI+Ojo2NjYyMjIyMjIyMjIyMjIyMjY2NjY6Ojo6Pj4+PkJCQkJGRkZGSkpKSk5OTk5SUlJSUlZWVlZWVlpbp5+bk4+Hf3tzb2djW1dPR0M7Ny8nIxsXDwsC+vbu6uLe1s7Kwr62sqqmnpqWjoqGfnp2cmpmYl5aWlZSTk5KRkZCQkI+Pj4+Pj46Ojo6Pj4+Pj4+Pj4+QkJCQkJGRkZGRkpKSkpKSk5OTk5OUlJSUlJWVlZWVlZaW6efm5OPh4N7d29rY1tXT0tDPzczKyMfFxMLBv768u7m4trWzsrCvrayrqainpaSjoqGfnp2cm5qZmZiXlpaVlJSTk5OSkpKRkZGRkZGQkJCQkJCQkJGRkZGRkZGRkZKSkpKSkpOTk5OTk5SUlJSUlJSVlZWVlZWWluno5uXj4eDe3dva2NfV1NLRz87MysnHxsTDwcC+vby6ube2tLOysK+urKuqqKempaSjoqGgn56dnJuamZmYl5eWlpWVlJSUk5OTk5KSkpKSkpKSkpKSkpKSkpKSkpKSkpKTk5OTk5OTk5SUlJSUlJSVlZWVlZWVlpbp6Obl4+Lg393c2tnX1dTS0c/OzMvJyMbFxMLBv768u7m4t7W0s7Gwr62sq6qpp6alpKOioaCfnp6dnJubmpmZmJeXlpaWlZWVlJSUlJOTk5OTk5OTk5KSkpKTk5OTk5OTk5OTk5OTlJSUlJSUlJSVlZWVlZWVlpaW6ujn5ePi4N/d3NrZ19bU09HQzs3LysjHxcTDwcC+vbu6ube2tbOysbCurayrqqmnpqWko6KhoaCfnp2cnJuampmZmJiXl5aWlpWVlZSUlJSUlJOTk5OTk5OTk5OTk5OTk5OTk5OUlJSUlJSUlJSVlZWVlZWVlZaWluro5+Xk4uHf3tzb2djW1dPS0M/NzMrJx8bEw8HAv728urm4trW0s7Gwr66tq6qpqKempaSjoqGgoJ+enZycm5uamZmYmJeXl5aWlpWVlZWUlJSUlJSUk5OTk5OTk5OTk5OTlJSUlJSUlJSUlJSVlZWVlZWVlZaWlpbq6Ofl5OLh397c29nY1tXT0tDPzczKycfGxMPCwL+9vLu5uLe1tLOysK+urayqqainpqWko6KhoaCfnp2dnJubmpqZmZiYl5eWlpaVlZWVlJSUlJSUlJSUk5OTk5OTk5OTlJSUlJSUlJSUlJSUlZWVlZWVlZWWlpaW6unn5uTi4d/e3NvZ2NbV09LQz83MysnHxsXDwsC/vby7ubi3tbSzsbCvrq2rqqmop6alpKOioaCfn56dnJybmpqZmZiYl5eXlpaWlZWVlZSUlJSUlJSTk5OTk5OTk5OTk5SUlJSUlJSUlJSUlJWVlZWVlZWVlpaWlurp5+bk4+Hg3t3b2djW1dPS0M/NzMrJx8bEw8LAv728urm4trW0srGwr62sq6qpqKalpKOioaGgn56dnJybmpqZmZiYl5eWlpaVlZWUlJSUlJSTk5OTk5OTk5OTk5OTk5OTk5SUlJSUlJSUlJSVlZWVlZWVlZaWlpbr6efm5OPh4N7d29rY1tXT0tDPzczKycfGxMPBwL69u7q5t7a0s7Kwr66sq6qpqKalpKOioaCfnp6dnJuampmYmJeXlpaWlZWUlJSUk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OUlJSUlJSUlJWVlZWVlZWWlpaW6+no5uTj4eDe3dva2NbV09LQz83MysjHxcTCwb++vLu5uLa1tLKxr66tq6qpp6alpKOioaCfnp2cm5qZmZiXl5aWlZWUlJSTk5OSkpKSkpKSkpKSkpKSkpKSkpKSkpKSk5OTk5OTk5SUlJSUlJSVlZWVlZWVlpaWluvp6Obl4+Hg3t3b2tjW1dPS0M/Ny8rIx8XDwsC/vby6ube2tLKxsK6tq6qop6ako6Khn56dnJuamZiYl5aVlZSUk5OSkpKRkZGRkZGQkJCQkJCQkJGRkZGRkZGRkpKSkpKSkpOTk5OTk5SUlJSUlJWVlZWVlZaWlpbr6ujm5ePi4N7d29rY1tXT0tDOzcvJyMbFw8HAvry7ubi2tLOxsK6tq6mopqWkoqGfnp2cmpmYl5aVlJOTkpGRkJCQj4+Pj46Ojo6Ojo6Oj4+Pj4+Pj5CQkJCQkZGRkZGSkpKSkpOTk5OTlJSUlJSVlZWVlZWWlpaW6+ro5+Xj4uDf3dva2NbV09LQzs3LycjGxMPBv728uri3tbOysK6sq6mnpqSioZ+enJuZmJeVlJOSkZCPjo6NjYyMjIuLi4uLi4uLjIyMjIyNjY2Ojo6Oj4+Pj5CQkJGRkZGSkpKSk5OTk5SUlJSUlZWVlZWWlpaWluzq6efl5OLg393c2tjX1dPS0M7My8nHxsTCwL+9u7m3trSysK6tq6mnpaOioJ6cmpmXlZSSkI+OjYuKiomIiIeHh4eHh4eHh4eIiImJiYqKi4uLjIyNjY2Ojo+Pj5CQkJGRkZKSkpKTk5OTlJSUlJWVlZWVlpaWlpbs6+nn5uTi4d/d3NrY19XT0tDOzMvJx8XEwsC+vLu5t7Wzsa+tq6mnpaOhn52bmJaUkpCOjIqJh4WEg4KBgICAgICAgIGBgoODhIWFhoeHiImJioqLi4yMjY2Ojo+PkJCQkZGRkpKSk5OTlJSUlJWVlZWVlpaWlpaX7evp6Obk4+Hf3tza2dfV1NLQzs3LycfFxMLAvry6uLa0srCurKqopaOhn5yal5WSkI2LiIWDgH58enh3dnV1dnZ3eHl6e3x9f4CBgoOEhYaHiIiJioqLjIyNjY6Oj4+QkJGRkZKSkpOTk5SUlJWVlZWWlpaWlpeXl+3s6ujn5ePi4N7d29nY1tTS0c/Ny8nIxsTCwL68uri2tLKwrqupp6WioJ2amJWSj4yJhYJ+enZybmtoZWRkZWZpa25wc3V3eXt8fn+BgoOEhYaHiImKi4uMjY2Ojo+PkJCRkZKSkpOTk5SUlJWVlZWWlpaWl5eXl5fu7Ovp5+bk4uHf3dza2NbV09HPzszKyMbEw8G/vbu5t7SysK6sqaekop+dmpeUkY2KhoJ+eXRuZ19WSz42PUhSWmBlam5xdHZ5e31+gIGDhIWGh4iJiouMjI2Ojo+PkJCRkZKSk5OTlJSUlZWVlZaWlpaXl5eXl5iY7+3r6ujm5ePh4N7c29nX1tTS0M7Ny8nHxcPCwL68uri1s7GvraqopqOgnpuYlZKPi4iEgHt2cWtkXVZQTU5TWV9kaGxwc3V4enx+gIGDhIWGh4iJiouMjY2Oj4+QkJGRkpKTk5OUlJSVlZWWlpaWl5eXl5eYmJiYmO/u7Ovp5+bk4uHf3dza2NfV09HQzszKyMfFw8G/vbu5t7Wzsa+sqqilo6Cem5mWk5CNioaDgHx5dnNxb25tbm9wcnR2eHp7fX+AgoOEhYeIiYqKi4yNjY6Pj5CQkZGSkpOTlJSUlZWVlpaWlpeXl5eYmJiYmJmZmZnw7+3r6ujn5ePi4N7d29nY1tTT0c/NzMrIxsTDwb+9u7m3tbOxr62rqaakoqCdm5iWlJGPjIqIhoSCgYB/fn5+fn9/gIGCg4SFhoeIiImKi4yMjY6Oj5CQkZGSkpOTk5SUlZWVlpaWlpeXl5eYmJiYmJmZmZmZmpqa8fDu7evp6Obl4+Hg3tzb2dfW1NLRz83MysjGxcPBv728uri2tLKwrqyqqKakoqCenJqZl5WTkpCPjYyLioqJiYmJiYmJioqLi4yMjY2Ojo+PkJCRkZKSk5OUlJSVlZWWlpaXl5eXmJiYmJiZmZmZmZqampqampqbm/Lx7+7s6+nn5uTj4d/e3NvZ19bU0tHPzszKyMfFw8LAvry7ube1tLKwrq2rqaempKKhn56cm5mYl5aVlJOTkpKRkZGRkZGRkZGRkpKSkpOTk5SUlJWVlZWWlpaXl5eXmJiYmJiZmZmZmZqampqampqbm5ubm5ubm5zz8vDv7ezq6efm5OLh397c29nX1tTT0dDOzMvJx8bEw8G/vry7ube2tLKxr66sq6mopqWko6Ggn56dnJuampmZmJiXl5eXl5eXlpeXl5eXl5eXl5iYmJiYmJmZmZmZmZqampqampubm5ubm5ubnJycnJycnJycnJyd9fPy8O/t7Orp5+Xk4uHf3tzb2djW1dPS0M/Ny8rIx8XEwsG/vry7ubi2tbSysa+urayqqainpqWko6KhoKCfn56enZ2cnJycm5ubm5ubm5ubm5ubm5ubm5ubm5ucnJycnJycnJycnJydnZ2dnZ2dnZ2dnZ2dnZ2dnvb08/Hw7u3r6ujn5eTi4eDe3dva2NfV1NLRz87My8nIx8XEwsG/vr27urm3trW0srGwr66trKuqqainpqalpKSjoqKioaGgoKCfn5+fn5+enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6en5/39fTz8fDu7evq6Ofm5OPh4N7d29rZ19bU09LQz83My8nIxsXEw8HAv728u7q5t7a1tLOysbCvrq2srKuqqamop6empqWlpKSko6OjoqKioqKhoaGhoaGhoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCg+Pf19PLx8O7t6+ro5+bk4+Hg393c29nY1tXU0tHQzs3MysnIx8XEw8LAv769vLu6ubi3trW0s7KxsK+vrq2srKurqqmpqKiop6empqalpaWkpKSkpKOjo6Ojo6KioqKioqKioqKhoaGhoaGhoaGhoaGhoaGhoaGhofn49vX08vHv7u3r6unn5uTj4uDf3tzb2tjX1tTT0tHPzs3MysnIx8bEw8LBwL++vby7urm4t7a1tLSzsrGxsK+vrq2trKyrq6qqqampqKiop6enpqampqWlpaWlpKSkpKSko6Ojo6Ojo6Ojo6KioqKioqKioqKioqL6+fj29fPy8e/u7evq6efm5ePi4d/e3dva2djW1dTT0dDPzs3MysnIx8bFxMPCwcC/vr28u7q5uLe3trW0tLOysrGwsK+vrq6traysq6uqqqqpqamoqKiop6enp6ampqampaWlpaWlpKSkpKSkpKSjo6Ojo6Ojo6Oj+/r59/b18/Lx7+7t6+rp5+bl5OLh4N7d3NvZ2NfW1dPS0dDPzs3LysnIx8bFxMPCwcC/vr29vLu6ubm4t7a2tbS0s7KysbGwsK+vrq6traysrKurqqqqqqmpqaioqKinp6enp6ampqampaWlpaWlpaSkpKSkpKSkpP37+vj39vXz8vHv7u3r6uno5uXk4uHg397c29rZ2NbV1NPS0dDPzczLysnIx8bFxMPCwsHAv769vLy7urm5uLe3trW1tLOzsrKxsbCwr6+urq6traysrKurq6qqqqmpqamoqKioqKenp6enpqampqampaWlpaWlpaT+/Pv6+Pf29PPy8O/u7evq6ejm5eTj4eDf3t3c2tnY19bV1NLR0M/OzczLysnIx8bFxcTDwsHAv7++vby7u7q5ubi3t7a1tbS0s7OysrGxsLCvr6+urq2traysrKurq6qqqqqpqampqKioqKenp6enp6ampqampqWl/v38+/n49/X08/Lw7+7s6+rp6Obl5OPi4N/e3dzb2tjX1tXU09LR0M/OzczLysnIx8bFxcTDwsHAwL++vb28u7q6ubm4t7e2trW0tLOzsrKxsbCwsK+vrq6ura2trKysq6urqqqqqqmpqamoqKioqKenp6enp6ampv/+/fv6+fj29fTz8fDv7uzr6unn5uXk4+Lg397d3Nva2djX1dTT0tHQz87NzMzLysnIx8bFxMTDwsHAwL++vb28u7u6ubm4uLe2trW1tLSzs7KysbGxsLCvr6+urq2traysrKyrq6uqqqqqqampqaioqKiop6enp6f///78+/r49/b18/Lx8O7t7Ovq6efm5eTj4uDf3t3c29rZ2NfW1dTT0tHQz87NzMvKycjIx8bFxMPDwsHAwL++vb28u7u6urm4uLe3tra1tbS0s7OysrGxsLCwr6+vrq6tra2srKysq6urqqqqqqmpqampqKioqKin///+/fz6+fj39fTz8vHv7u3s6+no5+bl5OPh4N/e3dzb2tnY19bV1NPS0dDPzs3My8rKycjHxsXFxMPCwsHAv7++vb28u7u6urm4uLe3tra1tbS0s7OysrGxsbCwr6+vrq6ura2trKysq6urq6qqqqqpqampqaioqP////78+/r59/b19PLx8O/u7evq6ejn5uTj4uHg397d3Nva2djX1tXU09LR0M/OzczLy8rJyMfGxsXEw8PCwcDAv76+vby8u7q6ubm4uLe3tra1tbS0s7OysrGxsbCwr6+vrq6ura2trKysrKurq6qqqqqqqampqaj////+/fz6+fj39vTz8vHw7u3s6+rp5+bl5OPi4eDf3t3b2tnY19bV1NTT0tHQz87NzMvKysnIx8bGxcTDw8LBwMC/vr69vLy7u7q5ubi4t7e2trW1tLSzs7KysrGxsLCwr6+vrq6ura2trKysq6urq6qqqqqpqamp//////38+/r49/b19PLx8O/u7evq6ejn5uXk4uHg397d3Nva2djX1tXU09LR0M/Pzs3My8rJycjHxsXFxMPCwsHAwL++vr28vLu7urm5uLi3t7a2tbW0tLOzs7KysbGxsLCvr6+urq6tra2srKysq6urq6qqqqqpqf/////+/fv6+fj29fTz8vDv7u3s6+ro5+bl5OPi4eDf3tzb2tnY19bW1dTT0tHQz87NzMzLysnIx8fGxcTEw8LBwcC/v769vby8u7q6ubm4uLe3tra1tbS0s7OysrKxsbCwsK+vr66urq2traysrKyrq6urqqqqqqn//////v38+vn49/b08/Lx8O7t7Ovq6ejm5eTj4uHg397d3Nva2djX1tXU09LR0M/Ozs3My8rJycjHxsXFxMPCwsHAwL++vr28vLu7urq5uLi3t7a2tbW0tLSzs7KysbGxsLCwr6+vrq6ura2trKysrKurq6uqqqqq//////79/Pv5+Pf29fPy8fDv7ezr6uno5+Xk4+Lh4N/e3dzb2tnY19bV1NPS0dDPz87NzMvKycnIx8bFxcTDw8LBwMC/vr69vby7u7q6ubm4t7e2trW1tbS0s7OysrKxsbCwsK+vr66urq2traysrKyrq6urqqqqqv/////+/fz7+vj39vXz8vHw7+3s6+rp6Ofm5OPi4eDf3t3c29rZ2NfW1dTT0tHQz87OzczLysnJyMfGxcXEw8LCwcDAv76+vby8u7u6urm4uLe3tra1tbS0tLOzsrKxsbGwsLCvr6+urq6tra2srKysq6urq6qqqqr///////38+/r49/b18/Lx8O/t7Ovq6ejn5eTj4uHg397d3Nva2djX1tXU09LR0M/OzczMy8rJyMfHxsXExMPCwcHAv7++vb28vLu6urm5uLi3t7a2tbW0tLOzsrKysbGxsLCvr6+urq6tra2trKysq6urq6qqqqqq//////79/Pv5+Pf29PPy8fDu7ezr6unn5uXk4+Lh4N/d3Nva2djX1tXU09LR0NDPzs3My8rJycjHxsXFxMPCwsHAwL++vr28vLu7urm5uLi3t7a2tbW0tLOzs7KysbGxsLCvr6+urq6tra2trKysrKurq6uqqqqqqf/////+/fz7+fj39vTz8vHv7u3s6+no5+bl5OPh4N/e3dzb2tnY19bV1NPS0dDPzs3My8rKycjHxsXFxMPCwsHAwL++vr28vLu6urm5uLi3t7a2tbW0tLOzsrKysbGwsLCvr6+urq6tra2trKysq6urq6qqqqqqqan//////v38+vn49vX08/Hw7+7t6+rp6Ofl5OPi4eDf3dzb2tnY19bV1NPS0dDPzs3My8vKycjHxsXFxMPCwsHAv7++vb28u7u6urm4uLe3tra1tbS0s7OzsrKxsbGwsK+vr66urq6tra2srKysq6urq6qqqqqpqamp//////79+/r59/b19PLx8O/t7Ovq6Ofm5eTi4eDf3t3c29nY19bV1NPS0dDPzs3My8rJycjHxsXExMPCwcDAv76+vby8u7q6ubm4t7e2trW1tLSzs7OysrGxsbCwr6+vrq6ura2traysrKyrq6urqqqqqqmpqampqP/////9/Pv6+Pf29PPy8O/u7evq6ejm5eTj4uDf3t3c29rY19bV1NPS0dDPzs3My8rJyMfGxsXEw8LBwcC/vr69vLy7urq5ubi3t7a2tbW0tLOzsrKysbGwsLCvr6+urq6tra2srKysq6urq6qqqqqqqampqamoqKj////+/fz6+fj29fTy8fDu7ezr6ejn5uTj4uHf3t3c29rY19bV1NPS0dDPzs3My8rJyMfGxcTDwsLBwL++vr28u7u6ubm4uLe2trW1tLSzs7KysrGxsLCwr6+urq6tra2trKysrKurq6uqqqqqqampqampqKioqKio/////v37+vj39vTz8vDv7uzr6ujn5uXj4uHg3t3c29rY19bV1NPR0M/OzczLysnIx8bFxMPCwcHAv769vby7urq5uLi3tra1tbS0s7OysrGxsLCwr6+vrq6tra2trKysq6urq6uqqqqqqampqamoqKioqKiop6enp/////38+/n49vX08vHw7u3s6uno5uXk4uHg3t3c29nY19bU09LR0M/NzMvKycjHxsXEw8LBwL++vr28u7q6ubi4t7a2tbS0s7OysrGxsLCvr6+urq6tra2srKyrq6urqqqqqqqpqampqaioqKioqKinp6enp6enpqb///79+/r49/b08/Hw7+3s6+no5uXk4uHg3t3c2tnY19XU09LQz87NzMrJyMfGxcTDwsHAv769vLu6urm4t7a2tbS0s7OysbGwsLCvr66ura2trKysq6urq6qqqqqpqampqamoqKioqKinp6enp6enp6ampqampqam///+/Pv5+Pb18/Lx7+7s6+ro5+Xk4uHg3t3c2tnY1tXU0tHQzs3My8nIx8bFw8LBwL++vby7urm4uLe2tbS0s7KysbCwr6+urq2traysq6urq6qqqqmpqampqKioqKiop6enp6enp6empqampqampqampaWlpaWlpf/+/fv6+ff29PPx8O7t6+ro5+bk4+Hg3t3b2tnX1tTT0tDPzszLysjHxsTDwsHAvr28u7q5uLe2tbSzs7KxsLCvrq6traysq6urqqqpqampqKioqKinp6enp6empqampqampqampaWlpaWlpaWlpaWlpaWlpKSkpKT//vz7+fj29fPy8O/t7Orp5+bk4+Hg3t3b2tjX1dTS0dDOzcvKyMfGxMPCwL++vLu6ubi2tbSzsrGxsK+ura2sq6uqqqmpqKiop6enpqampqalpaWlpaWlpaWlpaSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSk//38+vn39vTy8e/u7Ovp6Obl4+Lg3t3b2tjX1dTS0M/NzMrJx8bEw8HAvr28urm3trW0srGwr66trKuqqqmoqKempqWlpaSkpKSjo6Ojo6Ojo6Ojo6KioqKioqOjo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo/79+/n49vXz8vDv7evq6Ofl4+Lg393b2tjX1dPS0M7Ny8nIxsXDwcC+vbu5uLa1s7Kxr66tq6qpqKempaSko6KioaGhoKCgoKCfn5+fn5+fn6CgoKCgoKCgoKCgoaGhoaGhoaGhoaGhoqKioqKioqKioqKioqKioqL+/Pr59/b08/Hv7uzq6efm5OLh393c2tjX1dPS0M7My8nHxcTCwL69u7m3trSysK+trKqop6ako6KhoJ+enZ2cnJubm5ubm5ubm5ubm5ucnJycnZ2dnZ2enp6enp+fn5+fn6CgoKCgoKCgoaGhoaGhoaGhoaGhoaGh/fz6+Pf19PLw7+3r6ujm5ePh4N7c2tnX1dPS0M7MysnHxcPBv727ube2tLKwrqyqqKakoqCfnZyamZiXlpWVlJSUlJSUlJWVlZaWl5eXmJiZmZqampubm5ycnJ2dnZ2enp6enp+fn5+fn6CgoKCgoKCgoKChoaGhof37+vj29fPx8O7s6+nn5uTi4N/d29nY1tTS0M7Ny8nHxcPBv727uba0srCuq6mnpKKgnZuZl5WTkY+OjIyLi4qLi4uMjI2Oj5CQkZKTk5SVlZaXl5iYmZmampqbm5ycnJydnZ2enp6enp+fn5+fn5+goKCgoKCgoKD8+/n39vTz8e/t7Oro5+Xj4eDe3NrZ19XT0c/Ny8nHxcPBv727uLa0sa+tqqelop+cmZaTkI2Kh4SCf359fHx9fn+BgoSFh4iKi4yOj5CRkpOTlJWWlpeXmJmZmZqam5ubnJycnZ2dnZ6enp6enp+fn5+fn5+goKCg/Pr59/b08vHv7evq6Obk4+Hf3dza2NbU0tDOzMrIxsTCwL68ube1srCtqqilop+bmJSQjIiDf3l0bmhkYmJlaW1xdXl8f4GDhYeJioyNjpCRkpOTlJWWlpeXmJiZmZqam5ubnJycnJ2dnZ2enp6enp6fn5+fn5+fn/z6+ff19PLw7+3r6ejm5OLh393b2djW1NLQzszKyMbEwr+9u7m2tLGvrKmnpKCdmpaSjoqFgHlyal9RPCI6Tltka3B1eXx/gYSGiImLjI6PkJGSk5SUlZaWl5eYmJmZmpqbm5ubnJycnZ2dnZ2enp6enp6fn5+fn5/8+vn39fTy8O7t6+no5uTi4d/d29nX1tTS0M7MysjGxMLAvbu5t7Syr62qp6Win5uYlZGNiYWBfHhzb2xra2xvcXR3en1/goSGh4mKjI2Oj5CRkpOUlJWWlpeXmJiZmZqampubm5ycnJydnZ2dnZ6enp6enp6fn5+f/Pr59/X08vDv7evp6Obk4uHf3dva2NbU0tDOzMrIxsTCwL68uri1s7GurKqnpaKfnJqXlJGOjImGhIKBgH9/gICBgoOFhoeJiouMjY6PkJGSk5OUlZWWlpeXmJiZmZqampubm5ucnJycnZ2dnZ2dnp6enp6enp+fn/z6+ff19PLw7+3r6ujm5OPh393c2tjW1dPRz83LycfGxMLAvry5t7Wzsa+tqqimpKKfnZuZl5WTkZCPjo2MjIuLi4yMjI2Ojo+QkJGSkpOTlJWVlpaXl5iYmJmZmpqampubm5ycnJycnZ2dnZ2dnp6enp6enp6en5/8+vn39vTy8e/t7Oro5+Xj4eDe3NvZ19XU0tDOzMvJx8XDwb+9vLq4trSysK6sqqinpaOhoJ6cm5qYl5aWlZSUk5OTk5OTk5SUlJWVlZaWlpeXl5iYmJmZmZqampubm5ubnJycnJydnZ2dnZ2dnp6enp6enp6en5+f/Pv59/b08/Hv7uzq6efl5OLg393b2tjW1NPRz87MysjHxcPBwL68urm3tbOysK6tq6qop6WkoqGgn56dnJybmpqZmZmZmZiYmJiZmZmZmZmZmpqampqbm5ubm5ucnJycnJydnZ2dnZ2dnZ6enp6enp6enp6en5+fn/37+fj29fPx8O7s6+no5uTj4d/e3NrZ19XU0tHPzczKyMfFw8LAvr27uri2tbOysK+urKuqqaempaSjoqKhoJ+fnp6enZ2dnJycnJycnJycnJycnJycnJydnZ2dnZ2dnZ2dnZ6enp6enp6enp6enp6en5+fn5+fn5/9+/r49vXz8vDu7evq6Obl4+Lg393b2tjX1dPS0M/Ny8rIx8XEwsG/vry7ubi2tbSysbCvrqyrqqmop6empaSko6KioaGhoKCgn5+fn5+fnp6enp6enp6enp6enp6enp6enp6enp6enp6fn5+fn5+fn5+fn5+fn5+f/fz6+Pf19PLx7+3s6unn5uTi4d/e3NvZ2NbU09HQzs3LysjHxcTDwcC+vby6ubi3tbSzsrGwr66trKuqqaiop6ampaWkpKOjo6KioqGhoaGgoKCgoKCgoKCfn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn5+fn/38+vn39vTy8e/u7Ovp6Obl4+Lg393b2tjX1tTT0dDOzcvKycfGxMPCwL++vbu6ubi3trSzsrGwr6+urayrq6qpqainp6ampaWlpKSjo6OjoqKioqGhoaGhoaGgoKCgoKCgoKCgoKCgoKCgn5+fn5+fn5+fn5+fn5/+/Pv59/b08/Hw7u3r6ujn5eTi4d/e3NvZ2NbV1NLRz87Ny8rJx8bFw8LBwL69vLu6ubi3trW0s7KxsK+urq2sq6uqqqmoqKenpqampaWlpKSko6Ojo6KioqKioaGhoaGhoaGgoKCgoKCgoKCgoKCgoKCgoKCfn5+f/vz7+fj29fPy8O/t7Orp5+bk4+Hg3t3c2tnX1tTT0tDPzszLysjHxsXDwsHAv769u7q5uLe2tbS0s7KxsK+vrq2trKurqqqpqaiop6empqalpaWkpKSjo6Ojo6KioqKioaGhoaGhoaGhoKCgoKCgoKCgoKCgoKCgoP79+/r49/Xz8vDv7uzr6ejm5ePi4N/e3NvZ2NfV1NLR0M/NzMvJyMfGxcPCwcC/vr28u7q5uLe2tbSzsrKxsK+vrq2trKyrqqqpqaiop6enpqampaWlpKSko6Ojo6OioqKioqKhoaGhoaGhoaCgoKCgoKCgoKCgoKD+/fv6+Pf19PLx7+7s6+no5uXk4uHf3t3b2tjX1tTT0tDPzs3LysnIx8XEw8LBwL++vby7urm4t7a1tLSzsrGwsK+urq2srKurqqqpqaiop6enpqampaWlpKSkpKOjo6OioqKioqKhoaGhoaGhoKCgoKCgoKCgoKCg/v37+vj39fTy8e/u7Ovq6Ofl5OLh4N7d29rZ19bV09LR0M7NzMvJyMfGxcTDwsC/vr28u7q5ubi3trW0s7OysbCwr66ura2sq6uqqqmpqKiop6empqalpaWkpKSko6Ojo6KioqKioqGhoaGhoaGgoKCgoKCgoKCgoP79+/r49/X08vHv7u3r6ujn5eTj4eDe3dza2djW1dTS0dDPzczLysnHxsXEw8LBwL++vby7urm4t7a1tbSzsrKxsK+vrq6trKyrq6qqqamoqKenp6ampqWlpaSkpKOjo6OjoqKioqKhoaGhoaGhoKCgoKCgoKCgoJ/+/fv6+Pf19PLx7+7t6+ro5+Xk4+Hg3t3c2tnY1tXU0tHQz83My8rJyMbFxMPCwcC/vr28u7q5uLe2trW0s7KysbCwr66uraysq6uqqqmpqKinp6empqWlpaWkpKSjo6OjoqKioqKhoaGhoaGhoKCgoKCgoKCgoJ+f/v37+vj39fTy8e/u7Ovq6Ofl5OLh4N7d3NrZ19bV1NLR0M/NzMvKyMfGxcTDwsHAv769vLu6ubi3trW1tLOysbGwr6+ura2srKuqqqmpqKiop6empqalpaWkpKSjo6OjoqKioqKhoaGhoaGgoKCgoKCgoKCfn5+fn/79+/r49/X08vHv7uzr6ejm5eTi4d/e3dva2dfW1dPS0c/OzczKycjHxsXDwsHAv769vLu6ubi3t7a1tLOysrGwr6+ura2srKurqqmpqKiop6empqalpaSkpKSjo6OioqKioqGhoaGhoaCgoKCgoKCgn5+fn5+fn5/+/Pv5+Pb18/Lw7+3s6uno5uXj4uDf3tzb2djX1dTT0dDPzszLysnHxsXEw8LBv769vLu6ubi3t7a1tLOysrGwr6+ura2sq6uqqqmpqKinp6ampqWlpKSkpKOjo6KioqKhoaGhoaGgoKCgoKCgn5+fn5+fn5+fn5+f/vz7+fj29fPx8O7t6+rp5+bk4+Hg3t3c2tnX1tXT0tHPzs3LysnIxsXEw8LBwL69vLu6ubi3trW1tLOysbCwr66traysq6qqqamoqKenpqalpaWkpKSjo6OioqKioaGhoaGgoKCgoKCfn5+fn5+fn5+fn56enp6env38+vn39vTz8fDu7Ovp6Obl4+Lh397c29nY1tXU0tHQzs3MysnIx8XEw8LAv769vLu6ubi3trW0s7KxsLCvrq2trKurqqmpqKinp6ampaWlpKSjo6OioqKioaGhoaCgoKCgoJ+fn5+fn5+fnp6enp6enp6enp6enp79+/r49/X08vHv7ezq6efm5OPh4N7d29rY19bU09HQzs3MysnIxsXEw8HAv769u7q5uLe2tbSzsrGwr6+urayrq6qpqaiop6empqWlpKSjo6OioqKhoaGhoKCgoKCfn5+fn5+fnp6enp6enp6enp6enZ2dnZ2dnZ2d/fv5+Pb18/Lw7u3r6ujn5ePi4N/d3NrZ19bU09HQz83MysnHxsXDwsHAvr28u7m4t7a1tLOysbCvrq2sq6uqqaiop6empaWkpKOjo6KioaGhoaCgoKCfn5+fn56enp6enp6enZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnfz7+ff29PPx7+7s6+nn5uTj4d/e3NvZ2NbV09LQz83MysnHxsTDwsC/vby7uri3trWzsrGwr66trKuqqqmop6ampaSko6OioqGhoaCgoJ+fn56enp6enp2dnZ2dnZ2dnZycnJycnJycnJycnJycnJycnJycnJycnJw=","probe":[1.2255,1.2076,1.1899,1.1723,1.1548,1.1375,1.1204,1.1033,1.0865,1.0697,1.0531,1.0367,1.0203,1.0041,0.9881,0.9721,0.9563,0.9406,0.9251,0.9097,0.8944,0.8792,0.8642,0.8492,0.8344,0.8198,0.8052,0.7908,0.7764,0.7622,0.7481,0.7342,0.7203,0.7066,0.6929,0.6794,0.666,0.6527,0.6395,0.6264,0.6134,0.6005,0.5878,0.5751,0.5625,0.5501,0.5377,0.5255,0.5133,0.5012,0.4893,0.4774,0.4656,0.454,0.4424,0.4309,0.4195,0.4082,0.397,0.3859,0.3749,0.3639,0.3531,0.3423,0.3317,0.3211,0.3106,0.3002,0.2898,0.2796,0.2694,0.2593,0.2493,0.2394,0.2296,0.2198,0.2102,0.2006,0.191,0.1816,0.1722,0.1629,0.1537,0.1446,0.1355,0.1265,0.1176,0.1087,0.1,0.0913,0.0826,0.0741,0.0656,0.0571,0.0488,0.0405,0.0322,0.0241,0.016,0.008,0.0,0.0079,0.0157,0.0235,0.0312,0.0389,0.0465,0.054,0.0614,0.0688,0.0762,0.0835,0.0907,0.0979,0.105,0.112,0.119,0.126,0.1329,0.1397,0.1465,0.1532,0.1598,0.1664,0.173,0.1795,0.186,0.1924,0.1987,0.205,0.2113,0.2175,0.2236,0.2297,0.2358,0.2418,0.2477,0.2536,0.2595,0.2653,0.2711,0.2768,0.2824,0.2881,0.2937,0.2992,0.3047,0.3101,0.3155,0.3209,0.3262,0.3315,0.3367,0.3419,0.3471,0.3522,0.3572,0.3623,0.3673,0.3722,0.3771,0.382,0.3868,0.3916,0.3964,0.4011,0.4057,0.4104,0.415,0.4196,0.4241,0.4286,0.433,0.4375,0.4418,0.4462,0.4505,0.4548,0.459,0.4633,0.4674,0.4716,0.4757,0.4798,0.4838,0.4878,0.4918,0.4958,0.4997,0.5036,0.5075,0.5113,0.5151,0.5189,0.5226,0.5263,0.53,0.5336,0.5372,0.5408,0.5444]};  // |제타| 지도 (mpmath 계산)
+const ZEROS = DATA.zeros;          // 처음 100개 영점의 높이 (허수 부분)
+const ZT = DATA.Z;                  // [t, Z(t)]  t = 0 ~ 60
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('svg');
+const stage = document.getElementById('stage');
+const htmlLayer = document.getElementById('html');
+const caps = document.getElementById('captions');
+const tip = document.getElementById('tip');
+
+/* ---------- helpers ---------- */
+function el(tag, attrs = {}, parent = svg) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) {
+    if (k === 'text') e.textContent = attrs[k];
+    else if (attrs[k] !== undefined && attrs[k] !== null) e.setAttribute(k, attrs[k]);
+  }
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function lin(d0, d1, r0, r1) {
+  const f = v => r0 + (v - d0) / (d1 - d0) * (r1 - r0);
+  f.inv = p => d0 + (p - r0) / (r1 - r0) * (d1 - d0);
+  return f;
+}
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const fmt = n => n.toLocaleString('ko-KR');
+const pathOf = pts => pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('');
+
+/* primes & math */
+const PR = (() => { const N = 1000, a = new Uint8Array(N + 1).fill(1); a[0] = a[1] = 0;
+  for (let i = 2; i * i <= N; i++) if (a[i]) for (let j = i * i; j <= N; j += i) a[j] = 0; return a; })();
+const PRIMES = []; for (let i = 2; i <= 1000; i++) if (PR[i]) PRIMES.push(i);
+const piUpTo = x => { let c = 0; for (const p of PRIMES) { if (p <= x) c++; else break; } return c; };
+function li(x) { // 로그 적분 li(x)
+  const L = Math.log(x); let s = 0, term = 1;
+  for (let n = 1; n < 300; n++) { term *= L / n; s += term / n; if (term / n < 1e-14 * s) break; }
+  return 0.5772156649015329 + Math.log(L) + s;
+}
+
+/* ---------- animation engine ---------- */
+let token = 0;
+const CANCEL = { cancelled: true };
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const K = (RM || /[?&]fast/.test(location.search)) ? 0.05 : 1; // ?fast = 빠른 미리보기
+function wait(ms) {
+  const t = token;
+  return new Promise((res, rej) => setTimeout(() => (t === token ? res() : rej(CANCEL)), ms * K));
+}
+const ease = { io: p => p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2, out: p => 1 - Math.pow(1 - p, 3), lin: p => p };
+function tween(ms, fn, e = ease.io) {
+  const t = token;
+  return new Promise((res, rej) => {
+    const st = performance.now(), D = Math.max(1, ms * K);
+    function f(now) {
+      if (t !== token) return rej(CANCEL);
+      const p = Math.min(1, (now - st) / D);
+      fn(e(p), p);
+      if (p < 1) requestAnimationFrame(f); else res();
+    }
+    requestAnimationFrame(f);
+  });
+}
+const hide = n => { n.style.opacity = 0; return n; };
+const fadeIn = (n, ms = 450) => tween(ms, p => n.style.opacity = p);
+const fadeOut = (n, ms = 450) => tween(ms, p => n.style.opacity = 1 - p);
+function pop(n, cx, cy, ms = 320) { // 점이 톡 튀어나오는 효과
+  return tween(ms, p => {
+    const s = p < .7 ? p / .7 * 1.25 : 1.25 - (p - .7) / .3 * .25;
+    n.setAttribute('transform', `translate(${cx},${cy}) scale(${s}) translate(${-cx},${-cy})`);
+    n.style.opacity = Math.min(1, p * 2);
+  }, ease.lin);
+}
+
+async function say(html) {
+  caps.querySelectorAll('.cap').forEach(c => c.classList.add('old'));
+  const p = document.createElement('p'); p.className = 'cap'; p.innerHTML = html;
+  caps.appendChild(p); void p.offsetWidth; p.classList.add('in');
+  await wait(550);
+}
+
+/* ---------- tooltip & hover ---------- */
+function showTip(evt, html) {
+  tip.innerHTML = html; tip.classList.add('show');
+  const r = stage.getBoundingClientRect();
+  let x = evt.clientX - r.left + 14, y = evt.clientY - r.top + 14;
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  if (x + tw > r.width - 6) x = evt.clientX - r.left - tw - 14;
+  if (y + th > r.height - 6) y = evt.clientY - r.top - th - 14;
+  tip.style.left = Math.max(4, x) + 'px'; tip.style.top = Math.max(4, y) + 'px';
+}
+function hideTip() { tip.classList.remove('show'); }
+function svgPt(evt) {
+  const pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+function hoverTip(node, html) {
+  node.classList.add('hit');
+  node.addEventListener('pointerenter', e => showTip(e, html));
+  node.addEventListener('pointermove', e => showTip(e, html));
+  node.addEventListener('pointerleave', hideTip);
+}
+function crosshair(A, xs, rowsAt) {
+  const g = el('g');
+  const vl = el('line', { y1: A.T, y2: A.B, class: 'xhair', visibility: 'hidden' }, g);
+  const marks = [0, 1].map(() => el('circle', { r: 5, class: 'xmark', visibility: 'hidden' }, g));
+  const ov = el('rect', { x: A.L, y: A.T, width: A.R - A.L, height: A.B - A.T, fill: 'transparent', class: 'hit' }, g);
+  const off = () => { vl.setAttribute('visibility', 'hidden'); marks.forEach(m => m.setAttribute('visibility', 'hidden')); hideTip(); };
+  ov.addEventListener('pointermove', e => {
+    const r = rowsAt(xs.inv(svgPt(e).x));
+    if (!r) return off();
+    vl.setAttribute('x1', xs(r.x)); vl.setAttribute('x2', xs(r.x)); vl.setAttribute('visibility', 'visible');
+    marks.forEach((m, i) => {
+      const p = r.pts[i];
+      if (!p) return m.setAttribute('visibility', 'hidden');
+      m.setAttribute('cx', p[0]); m.setAttribute('cy', p[1]); m.style.fill = p[2]; m.setAttribute('visibility', 'visible');
+    });
+    showTip(e, r.html);
+  });
+  ov.addEventListener('pointerleave', off);
+  return g;
+}
+function drawAxes(A, xs, ys, o) {
+  const g = el('g');
+  o.yt.forEach(v => {
+    el('line', { x1: A.L, x2: A.R, y1: ys(v), y2: ys(v), class: v === 0 && o.zeroLine ? 'axis-strong' : 'grid' }, g);
+    el('text', { x: A.L - 8, y: ys(v) + 4, 'text-anchor': 'end', class: 'tick', text: o.yf ? o.yf(v) : v }, g);
+  });
+  o.xt.forEach(v => el('text', { x: xs(v), y: A.B + 18, 'text-anchor': 'middle', class: 'tick', text: o.xf ? o.xf(v) : v }, g));
+  el('line', { x1: A.L, x2: A.R, y1: A.B, y2: A.B, class: 'axis' }, g);
+  if (o.xl) el('text', { x: A.R, y: A.B + 40, 'text-anchor': 'end', class: 'lbl', text: o.xl }, g);
+  if (o.yl) el('text', { x: A.L, y: A.T - 14, 'text-anchor': 'start', class: 'lbl', text: o.yl }, g);
+  return g;
+}
+function clipRect(id, x, y, w, h) {
+  const defs = el('defs'); const cp = el('clipPath', { id }, defs);
+  return el('rect', { x, y, width: w, height: h }, cp);
+}
+function legend(x, y, items) { // items: [label, cssColor, kind('line'|'box'|'hatch')]
+  const g = el('g'); let cx = x;
+  items.forEach(([label, color, kind]) => {
+    if (kind === 'line') el('line', { x1: cx, x2: cx + 18, y1: y - 5, y2: y - 5, style: `stroke:${color};stroke-width:3` }, g);
+    else if (kind === 'hatch') el('rect', { x: cx, y: y - 11, width: 14, height: 12, rx: 2, fill: 'url(#hatch)' }, g);
+    else el('rect', { x: cx, y: y - 11, width: 14, height: 12, rx: 2, style: `fill:${color}` }, g);
+    const t = el('text', { x: cx + 24, y, class: 'lbl', text: label }, g);
+    cx += 24 + t.getComputedTextLength() + 22;
+  });
+  return g;
+}
+
+/* ===================================================================== */
+/* 0. 표지 */
+async function sceneCover() {
+  htmlLayer.innerHTML = `
+  <div class="cover">
+    <div class="cover-text">
+      <div class="kicker">2026년 11월 22일 기준 · 중학생용 설명</div>
+      <h2>리만가설,<br>도대체 뭐가 풀린 걸까?</h2>
+      <p>2026년 11월 20일, “AI와 수학자가 167년 묵은 수학 난제를 풀었다”는 소식이 나왔어요.
+         소수에서 출발해서 13단계로 차근차근 알아봐요.</p>
+      <button class="primary" id="startBtn">시작하기 →</button>
+      <p class="hint">키보드 ← → 로도 넘길 수 있어요. 그래프에 마우스를 올리면 숫자가 보여요.</p>
+    </div>
+  </div>`;
+  document.getElementById('startBtn').onclick = () => go(1);
+  const art = document.createElementNS(NS, 'svg');
+  art.setAttribute('viewBox', '0 0 200 320'); art.setAttribute('class', 'cover-art');
+  htmlLayer.querySelector('.cover').appendChild(art);
+  el('rect', { x: 70, y: 8, width: 60, height: 304, rx: 6, class: 'strip' }, art);
+  el('line', { x1: 100, x2: 100, y1: 8, y2: 312, class: 'critline' }, art);
+  el('text', { x: 100, y: 312 - 2, 'text-anchor': 'middle', class: 'tick', text: '' }, art);
+  const ys = lin(0, 62, 300, 14);
+  const ds = ZEROS.filter(z => z < 62).map(z => hide(el('circle', { cx: 100, cy: ys(z), r: 6, class: 'dot-s1' }, art)));
+  await say('먼저 결론부터 살짝: 리만가설은 <b>‘소수가 얼마나 고르게 퍼져 있나’</b>에 대한 질문이고, 그림 오른쪽의 <b>파란 점들이 모두 한 줄 위에 있나?</b>로 바꿔 말할 수 있어요.');
+  for (const d of ds) { await pop(d, 100, +d.getAttribute('cy'), 260); }
+}
+
+/* 1. 소수 */
+async function scenePrimes() {
+  const cols = 10, cw = 80, ch = 60, ox = (900 - cols * cw) / 2, oy = 42;
+  const cells = {};
+  for (let n = 1; n <= 60; n++) {
+    const i = n - 1, x = ox + (i % cols) * cw, y = oy + Math.floor(i / cols) * ch;
+    const g = el('g', { class: 'cell', transform: `translate(${x},${y})` });
+    el('rect', { x: 4, y: 4, width: cw - 8, height: ch - 8, rx: 9, class: 'cellbg' }, g);
+    el('text', { x: cw / 2, y: ch / 2 + 7, 'text-anchor': 'middle', class: 'celltext', text: n }, g);
+    const strike = el('line', { x1: 18, y1: ch - 16, x2: cw - 18, y2: 16, class: 'strike' }, g); hide(strike);
+    hide(g); cells[n] = { g, strike, gone: false };
+  }
+  await say('<b>소수</b>는 1과 자기 자신으로만 나누어떨어지는 수예요. 1부터 60까지 늘어놓고 찾아볼게요.');
+  await tween(1100, p => { for (let n = 1; n <= 60; n++) cells[n].g.style.opacity = clamp((p * 70 - n) / 10, 0, 1); }, ease.lin);
+  await wait(300);
+  cells[1].g.classList.add('gone'); cells[1].gone = true;
+  await say('1은 소수가 아니라서 빼요. 그다음 <b>2</b>는 소수! 2의 배수(4, 6, 8, …)는 2로 나누어지니까 지워요.');
+  for (const p of [2, 3, 5, 7]) {
+    cells[p].g.classList.add('prime');
+    await wait(350);
+    for (let m = 2 * p; m <= 60; m += p) {
+      if (cells[m].gone) continue;
+      cells[m].gone = true; cells[m].g.classList.add('gone'); cells[m].strike.style.opacity = 1;
+      await wait(p === 2 ? 45 : 70);
+    }
+    await wait(350);
+    if (p === 2) await say('3, 5, 7도 똑같이 해요. 소수를 찾을 때마다 그 배수를 지워요. (이 방법을 <b>에라토스테네스의 체</b>라고 해요)');
+  }
+  await wait(200);
+  for (let n = 2; n <= 60; n++) if (!cells[n].gone && !cells[n].g.classList.contains('prime')) { cells[n].g.classList.add('prime'); await wait(70); }
+  await say('남은 수가 전부 소수예요: 2, 3, 5, 7, 11, 13, 17, … 60까지 <b>17개</b>.');
+  await wait(500);
+  const rings = [12, 60].map(n => {
+    const i = n - 1, x = ox + (i % cols) * cw, y = oy + Math.floor(i / cols) * ch;
+    return hide(el('rect', { x: x + 1, y: y + 1, width: cw - 2, height: ch - 2, rx: 11, class: 'ring' }));
+  });
+  rings.forEach(r => fadeIn(r).catch(() => {}));
+  await say('모든 자연수는 소수의 곱으로 만들 수 있어요. 12 = 2×2×3, 60 = 2×2×3×5. 그래서 소수를 <b>‘수의 원자’</b>라고 불러요.');
+}
+
+/* 2. 소수는 제멋대로 */
+async function sceneScatter() {
+  const rows = [{ a: 1, b: 100, y: 150 }, { a: 101, b: 200, y: 330 }];
+  const dots = [];
+  rows.forEach(r => {
+    const xs = lin(r.a, r.b, 70, 850); r.xs = xs;
+    el('line', { x1: 60, x2: 860, y1: r.y, y2: r.y, class: 'axis' });
+    for (let v = r.a === 1 ? 10 : 110; v <= r.b; v += 10) {
+      el('line', { x1: xs(v), x2: xs(v), y1: r.y, y2: r.y + 5, class: 'axis' });
+      el('text', { x: xs(v), y: r.y + 22, 'text-anchor': 'middle', class: 'tick', text: v });
+    }
+    el('text', { x: 60, y: r.y + 22, 'text-anchor': 'start', class: 'tick', text: r.a });
+  });
+  let prev = null;
+  PRIMES.filter(p => p <= 200).forEach(p => {
+    const r = p <= 100 ? rows[0] : rows[1];
+    const c = hide(el('circle', { cx: r.xs(p), cy: r.y - 14, r: 6, class: 'dot-s1' }));
+    const gap = prev ? ` (앞 소수 ${prev}와 ${p - prev} 차이)` : '';
+    const hit = el('circle', { cx: r.xs(p), cy: r.y - 14, r: 11, fill: 'transparent' });
+    hoverTip(hit, `소수 <b>${p}</b>${gap}`);
+    dots.push(c); prev = p;
+  });
+  await say('이번엔 1부터 200까지 수직선 위에 <b>소수만</b> 점으로 찍어 볼게요.');
+  await tween(3200, p => dots.forEach((d, i) => d.style.opacity = clamp((p * (dots.length + 4) - i) / 4, 0, 1)), ease.lin);
+  await say('200까지 소수는 <b>46개</b>. 그런데 간격이 들쭉날쭉해요.');
+  await wait(400);
+  // 쌍둥이 소수 41, 43
+  const r0 = rows[0], r1 = rows[1];
+  const b1 = hide(el('path', { d: `M${r0.xs(41)},${r0.y - 30} v-8 H${r0.xs(43)} v8`, class: 'bracket' }));
+  const t1 = hide(el('text', { x: (r0.xs(41) + r0.xs(43)) / 2, y: r0.y - 46, 'text-anchor': 'middle', class: 'lbl-ink', text: '41, 43: 딱 2 차이 (쌍둥이 소수)' }));
+  // 빈 구간 113 → 127
+  const b2 = hide(el('path', { d: `M${r1.xs(113)},${r1.y - 30} v-8 H${r1.xs(127)} v8`, class: 'bracket' }));
+  const t2 = hide(el('text', { x: (r1.xs(113) + r1.xs(127)) / 2, y: r1.y - 46, 'text-anchor': 'middle', class: 'lbl-ink', text: '113 → 127: 사이의 수 13개 중 소수 0개' }));
+  fadeIn(b1).catch(() => {}); await fadeIn(t1);
+  await say('41과 43처럼 딱 붙어 있기도 하고, 113 다음엔 127까지 <b>소수가 하나도 없는 구간</b>도 있어요.');
+  fadeIn(b2).catch(() => {}); await fadeIn(t2);
+  await wait(400);
+  await say('다음 소수가 정확히 어디에 나올지 알려주는 간단한 공식은 <b>아무도 몰라요</b>. 소수는 제멋대로처럼 보여요.');
+}
+
+/* 3. 소수 개수 세기 */
+async function sceneCount() {
+  const A = { L: 80, R: 860, T: 44, B: 372 };
+  const xs = lin(0, 1000, A.L, A.R), ys = lin(0, 200, A.B, A.T);
+  drawAxes(A, xs, ys, { xt: [0, 200, 400, 600, 800, 1000], yt: [0, 50, 100, 150, 200], xl: 'x (어디까지 셀까?)', yl: 'x까지 소수의 개수' });
+  const xh = crosshair(A, xs, xv => {
+    const x = Math.round(clamp(xv, 2, 1000)); const a = piUpTo(x), b = li(x);
+    return { x, pts: [[xs(x), ys(a), 'var(--s1)'], [xs(x), ys(b), 'var(--s2)']],
+      html: `<b>${fmt(x)}까지</b><br><span class="sw" style="background:var(--s1)"></span>실제 소수: <b>${a}</b>개<br><span class="sw" style="background:var(--s2)"></span>예측 곡선: <b>${b.toFixed(1)}</b>` };
+  });
+  // 계단
+  let d = `M${xs(0)},${ys(0)}`; let c = 0;
+  PRIMES.forEach(p => { c++; d += `H${xs(p).toFixed(1)}V${ys(c).toFixed(1)}`; });
+  d += `H${xs(1000)}`;
+  const cr = clipRect('clipStair', A.L - 2, A.T - 30, 0, A.B - A.T + 40);
+  const stair = el('path', { d, class: 'line-s1', 'clip-path': 'url(#clipStair)' });
+  const pts = []; for (let x = 2; x <= 1000; x += 4) pts.push([xs(x), ys(li(x))]);
+  const cr2 = clipRect('clipLi', A.L - 2, A.T - 30, 0, A.B - A.T + 40);
+  const curve = el('path', { d: pathOf(pts), class: 'line-s2', 'clip-path': 'url(#clipLi)' });
+  const lab1 = hide(el('text', { x: A.R - 4, y: ys(168) + 52, 'text-anchor': 'end', class: 'lbl-ink', text: '실제 소수 개수: 168' }));
+  const lab2 = hide(el('text', { x: A.R - 4, y: ys(177.6) - 10, 'text-anchor': 'end', class: 'lbl-ink', text: '예측 곡선: 177.6' }));
+  const lg = hide(legend(A.L + 470, A.B - 22, [['실제 소수 개수', 'var(--s1)', 'line'], ['예측 곡선 (가우스)', 'var(--s2)', 'line']]));
+
+  await say('x까지 소수가 몇 개인지 세어서 그리면, 소수를 만날 때마다 한 칸씩 올라가는 <b>계단</b>이 돼요.');
+  fadeIn(lg).catch(() => {});
+  await tween(3200, p => cr.setAttribute('width', p * (A.R - A.L + 4)), ease.lin);
+  await fadeIn(lab1, 300);
+  await say('가우스(1790년대)는 이 계단을 거의 그대로 따라가는 매끈한 <b>예측 곡선</b>을 찾아냈어요.');
+  await tween(2200, p => cr2.setAttribute('width', p * (A.R - A.L + 4)), ease.io);
+  await fadeIn(lab2, 300);
+  // 표
+  const tg = hide(el('g'));
+  const tx = A.L + 20, ty = A.T + 34;
+  el('rect', { x: tx - 12, y: ty - 4, width: 418, height: 118, rx: 10, class: 'panel' }, tg);
+  const cols = [[tx, 'start'], [tx + 190, 'end'], [tx + 300, 'end'], [tx + 392, 'end']];
+  const rowsT = [['어디까지 셀까?', '실제', '예측', '차이'], ['1,000까지', '168', '178', '약 10'],
+    ['100만까지', '78,498', '78,628', '약 130'], ['10억까지', '50,847,534', '50,849,235', '약 1,700']];
+  rowsT.forEach((r, i) => r.forEach((s, j) => el('text', { x: cols[j][0], y: ty + 20 + i * 26, 'text-anchor': cols[j][1],
+    class: i === 0 ? 'tick' : (j === 3 ? 'lbl-b' : 'lbl-ink'), text: s }, tg)));
+  await wait(300);
+  await fadeIn(tg);
+  await say('아주 잘 맞지만, 실제 개수와 예측 사이에는 늘 <b>차이(오차)</b>가 있어요.');
+  await wait(600);
+  await say('수가 엄청나게 커지면 이 오차는 얼마나 커질 수 있을까? <b>리만가설은 “이 오차가 가능한 한 가장 작은 범위에 묶여 있다”</b>는 주장과 같아요.');
+  svg.appendChild(xh);
+}
+
+/* 4. 제타 함수 */
+async function sceneZeta() {
+  const X0 = 236, xs = lin(0, 1.8, X0, 760), target = Math.PI ** 2 / 6;
+  el('text', { x: 450, y: 46, 'text-anchor': 'middle', class: 'formula', text: '제타(s) = 1 + 1/2ˢ + 1/3ˢ + 1/4ˢ + …' });
+  el('text', { x: 450, y: 72, 'text-anchor': 'middle', class: 'lbl', text: '예시로 s = 2 를 넣어 볼게요' });
+  [0, 0.5, 1, 1.5].forEach(v => {
+    el('line', { x1: xs(v), x2: xs(v), y1: 110, y2: 360, class: 'grid' });
+    el('text', { x: xs(v), y: 380, 'text-anchor': 'middle', class: 'tick', text: v });
+  });
+  const tg = hide(el('g'));
+  el('line', { x1: xs(target), x2: xs(target), y1: 104, y2: 362, class: 'target' }, tg);
+  el('text', { x: xs(target), y: 98, 'text-anchor': 'middle', class: 'lbl-ink', text: '1.6449… (= π²/6)' }, tg);
+
+  const row = (y, label) => {
+    el('text', { x: X0 - 12, y: y + 23, 'text-anchor': 'end', class: 'lbl-ink', text: label });
+    const bar = el('rect', { x: X0, y, width: 0, height: 36, rx: 4 });
+    const val = el('text', { x: X0 + 8, y: y + 24, class: 'lbl-b', text: '' });
+    const f = el('text', { x: X0, y: y - 12, class: 'lbl', text: '' });
+    return { bar, val, f };
+  };
+  const A1 = row(150, '모든 자연수로 더하기'); A1.bar.setAttribute('class', 'fill-s1');
+  const A2 = row(290, '소수만으로 곱하기'); A2.bar.setAttribute('class', 'fill-s2');
+  const setBar = (R, v, label) => { R.bar.setAttribute('width', Math.max(0, xs(v) - X0)); R.val.setAttribute('x', xs(v) + 8); R.val.textContent = label; };
+
+  const S = [0]; for (let n = 1; n <= 1000; n++) S.push(S[n - 1] + 1 / (n * n));
+  const P = [1]; PRIMES.forEach((p, i) => P.push(P[i] * (p * p) / (p * p - 1)));
+
+  await say('리만이 쓴 도구는 <b>제타 함수</b>예요. 먼저 쉬운 예: 1, 2, 3, 4, … 의 <b>제곱분의 1</b>을 끝없이 더해 볼게요.');
+  const sumTerms = ['1', '1/2²', '1/3²', '1/4²', '1/5²', '1/6²', '1/7²', '1/8²'];
+  for (let n = 1; n <= 8; n++) {
+    A1.f.textContent = sumTerms.slice(0, n).join(' + ') + ' + …';
+    const a = S[n - 1], b = S[n];
+    await tween(420, p => setBar(A1, a + (b - a) * p, (a + (b - a) * p).toFixed(4)));
+    await wait(120);
+  }
+  await tween(1800, p => { const n = Math.max(8, Math.round(8 + 992 * p)); setBar(A1, S[n], `${S[n].toFixed(4)}  (${fmt(n)}개 더함)`); }, ease.out);
+  await fadeIn(tg);
+  await say('더할수록 <b>1.6449…</b>라는 수에 다가가요. 신기하게도 원주율 π가 튀어나와요(π²/6).');
+  await wait(500);
+  await say('이번엔 <b>소수만</b> 써서 곱해 볼게요. 소수 p마다 p²/(p²−1)을 곱해요: 4/3 × 9/8 × 25/24 × 49/48 × …');
+  const prodTerms = ['4/3', '9/8', '25/24', '49/48', '121/120', '169/168'];
+  for (let k = 1; k <= 6; k++) {
+    A2.f.textContent = prodTerms.slice(0, k).join(' × ') + ' × …';
+    const a = P[k - 1], b = P[k];
+    await tween(420, p => setBar(A2, a + (b - a) * p, (a + (b - a) * p).toFixed(4)));
+    await wait(120);
+  }
+  await tween(1800, p => { const k = Math.max(6, Math.round(6 + (PRIMES.length - 6) * p)); setBar(A2, P[k], `${P[k].toFixed(4)}  (소수 ${k}개)`); }, ease.out);
+  await say('<b>똑같은 수</b>에 도착해요! 모든 자연수로 만든 합 = 소수만으로 만든 곱(오일러의 발견). 그래서 제타 함수 안에는 <b>소수 정보가 통째로</b> 들어 있어요.');
+  await wait(600);
+  await say('리만(1859)은 여기서 ‘2’ 자리에 다른 수, 심지어 <b>지도 위의 점</b>까지 넣어서 제타 함수를 커다란 지도처럼 펼쳤어요.');
+}
+
+/* 5. 복소평면과 영점 */
+async function scenePlane() {
+  const A = { L: 80, R: 860, T: 34, B: 392 };
+  const xs = lin(-7, 3, A.L, A.R), ys = lin(-4, 62, A.B, A.T);
+  const g0 = hide(el('g'));
+  for (let v = -7; v <= 3; v++) el('line', { x1: xs(v), x2: xs(v), y1: A.T, y2: A.B, class: 'grid' }, g0);
+  [20, 40, 60].forEach(v => { el('line', { x1: A.L, x2: A.R, y1: ys(v), y2: ys(v), class: 'grid' }, g0); el('text', { x: A.L - 8, y: ys(v) + 4, 'text-anchor': 'end', class: 'tick', text: v }, g0); });
+  el('line', { x1: A.L, x2: A.R, y1: ys(0), y2: ys(0), class: 'axis-strong' }, g0);
+  el('line', { x1: xs(0), x2: xs(0), y1: A.T, y2: A.B, class: 'axis-strong' }, g0);
+  for (let v = -6; v <= 3; v++) if (v !== 0) el('text', { x: xs(v), y: ys(0) + 18, 'text-anchor': 'middle', class: 'tick', text: v }, g0);
+  el('text', { x: xs(0) - 6, y: ys(0) + 18, 'text-anchor': 'end', class: 'tick', text: '0' }, g0);
+  el('text', { x: A.R, y: ys(0) - 8, 'text-anchor': 'end', class: 'lbl', text: '가로 →' }, g0);
+  el('text', { x: xs(0) - 8, y: A.T + 14, 'text-anchor': 'end', class: 'lbl', text: '세로 ↑' }, g0);
+
+  const g1 = hide(el('g'));
+  el('rect', { x: xs(0), y: A.T, width: xs(1) - xs(0), height: A.B - A.T, class: 'strip' }, g1);
+  el('line', { x1: xs(.5), x2: xs(.5), y1: A.T, y2: A.B, class: 'critline' }, g1);
+  el('text', { x: xs(1) + 10, y: A.T + 44, class: 'lbl-ink', text: '← 결정적 띠 (가로 0~1)' }, g1);
+  el('text', { x: xs(1) + 10, y: A.T + 66, class: 'lbl-ink', text: '가운데 점선 = 1/2 선' }, g1);
+
+  const g2 = hide(el('g'));
+  [-2, -4, -6].forEach(v => { const c = el('circle', { cx: xs(v), cy: ys(0), r: 6, class: 'dot-muted' }, g2); });
+  el('text', { x: xs(-4), y: ys(0) - 16, 'text-anchor': 'middle', class: 'lbl', text: '뻔한 영점: −2, −4, −6, … (관심 밖)' }, g2);
+  [-2, -4, -6].forEach(v => { const h = el('circle', { cx: xs(v), cy: ys(0), r: 11, fill: 'transparent' }); hoverTip(h, `뻔한 영점 <b>${v}</b><br>이유가 뻔해서 리만가설과 무관`); });
+
+  await say('리만은 제타 함수에 <b>지도 위의 점</b>을 넣었어요. 점마다 가로·세로 두 좌표가 있는 수예요. (수학에서는 <b>복소수</b>라고 불러요)');
+  await fadeIn(g0, 600);
+  await say('가로 0~1 사이의 <b>띠</b>가 아주 중요해요. 그 한가운데 점선이 <b>1/2 선</b>이에요.');
+  await fadeIn(g1, 600);
+  await wait(300);
+  await say('제타 값이 딱 0이 되는 점을 <b>영점</b>이라고 해요. −2, −4, −6, … 에 있는 영점은 이유가 뻔해서 관심 밖이에요.');
+  await fadeIn(g2, 500);
+  await wait(400);
+  await say('중요한 영점들은 띠 안에 있어요. 하나씩 찾아보면… <b>전부 1/2 선 위에 줄지어 나타나요!</b> (아래쪽에도 거울처럼 똑같이 있어요)');
+  const zs = ZEROS.filter(z => z < 62);
+  for (let i = 0; i < zs.length; i++) {
+    const c = hide(el('circle', { cx: xs(.5), cy: ys(zs[i]), r: 6, class: 'dot-s1' }));
+    if (i < 3) { const t = hide(el('text', { x: xs(.5) + 12, y: ys(zs[i]) + 4, class: 'tick', text: `높이 ${zs[i].toFixed(2)}` })); fadeIn(t, 300).catch(() => {}); }
+    const h = el('circle', { cx: xs(.5), cy: ys(zs[i]), r: 11, fill: 'transparent' });
+    hoverTip(h, `중요한 영점 <b>#${i + 1}</b><br>가로 1/2 · 세로 ${zs[i].toFixed(4)}`);
+    await pop(c, xs(.5), ys(zs[i]), 300);
+    await wait(120);
+  }
+}
+
+/* 6. 1/2 선 따라 걷기 */
+async function sceneWalk() {
+  const A = { L: 80, R: 860, T: 50, B: 372 };
+  const xs = lin(0, 60, A.L, A.R), ys = lin(-4, 4, A.B, A.T);
+  drawAxes(A, xs, ys, { xt: [0, 10, 20, 30, 40, 50, 60], yt: [-4, -2, 0, 2, 4], zeroLine: true, yf: v => v > 0 ? '+' + v : v,
+    xl: '1/2 선 위의 높이 (지도의 세로 좌표) →', yl: '제타 값 (+면 위, −면 아래)' });
+  const zAt = t => { const i = clamp(Math.floor(t * 10), 0, ZT.length - 2); const f = t * 10 - i; return ZT[i][1] * (1 - f) + ZT[i + 1][1] * f; };
+  const xh = crosshair(A, xs, xv => {
+    if (xv < 0 || xv > 60) return null; const t = Math.round(xv * 10) / 10; const z = zAt(t);
+    const near = ZEROS.find(q => Math.abs(q - t) < 0.35);
+    return { x: t, pts: [[xs(t), ys(z), 'var(--s1)']], html: `높이 <b>${t.toFixed(1)}</b><br>제타 값: <b>${z.toFixed(3)}</b>${near ? `<br>→ 근처에 영점 (${near.toFixed(3)})` : ''}` };
+  });
+  const cr = clipRect('clipZ', A.L - 2, A.T - 10, 0, A.B - A.T + 20);
+  el('path', { d: pathOf(ZT.map(([t, z]) => [xs(t), ys(z)])), class: 'line-s1', 'clip-path': 'url(#clipZ)' });
+  const head = hide(el('circle', { r: 6, class: 'dot-s1' }));
+  const counter = el('text', { x: A.R, y: A.T - 14, 'text-anchor': 'end', class: 'lbl-b', text: '찾은 영점: 0개' });
+  const zs = ZEROS.filter(z => z < 60);
+  const zdots = zs.map((z, i) => {
+    const c = hide(el('circle', { cx: xs(z), cy: ys(0), r: 6, class: 'dot-s1' }));
+    const t = hide(el('text', { x: xs(z), y: ys(0) + (i % 2 ? 24 : -14), 'text-anchor': 'middle', class: 'tick', text: z.toFixed(1) }));
+    return { z, c, t, on: false };
+  });
+  await say('이번엔 <b>1/2 선을 따라 아래에서 위로 걸어가며</b> 제타 값을 재 볼게요. 값이 +면 위로, −면 아래로 그려요.');
+  head.style.opacity = 1;
+  await tween(7000, p => {
+    const t = p * 60; cr.setAttribute('width', xs(t) - A.L + 2);
+    head.setAttribute('cx', xs(t)); head.setAttribute('cy', ys(zAt(t)));
+    let n = 0;
+    zdots.forEach(d => { if (d.z <= t) { n++; if (!d.on) { d.on = true; pop(d.c, xs(d.z), ys(0), 300).catch(() => {}); fadeIn(d.t, 300).catch(() => {}); } } });
+    counter.textContent = `찾은 영점: ${n}개`;
+  }, ease.lin);
+  await fadeOut(head, 200);
+  await say('그래프가 <b>0을 지나갈 때마다</b> 그게 영점이에요! 높이 60까지 13개를 찾았어요.');
+  await wait(500);
+  await say('컴퓨터로 이렇게 계속 찾아서, 지금까지 <b>10조 개가 넘는</b> 영점이 전부 1/2 선 위에 있다는 걸 확인했어요.');
+  svg.appendChild(xh);
+}
+
+/* 7. 리만가설 */
+async function sceneRH() {
+  const A = { L: 70, R: 470, T: 30, B: 392 };
+  const xs = lin(-0.25, 1.25, A.L, A.R), ys = lin(0, 62, A.B, A.T);
+  el('rect', { x: xs(0), y: A.T, width: xs(1) - xs(0), height: A.B - A.T, class: 'strip' });
+  el('line', { x1: xs(0), x2: xs(0), y1: A.T, y2: A.B, class: 'axis' });
+  el('line', { x1: xs(1), x2: xs(1), y1: A.T, y2: A.B, class: 'axis' });
+  el('line', { x1: xs(.5), x2: xs(.5), y1: A.T, y2: A.B, class: 'critline' });
+  el('line', { x1: A.L, x2: A.R, y1: A.B, y2: A.B, class: 'axis' });
+  [[0, '0'], [.5, '1/2'], [1, '1']].forEach(([v, s]) => el('text', { x: xs(v), y: A.B + 18, 'text-anchor': 'middle', class: 'tick', text: s }));
+  ZEROS.filter(z => z < 62).forEach((z, i) => {
+    el('circle', { cx: xs(.5), cy: ys(z), r: 6, class: 'dot-s1' });
+    hoverTip(el('circle', { cx: xs(.5), cy: ys(z), r: 11, fill: 'transparent' }), `중요한 영점 <b>#${i + 1}</b> · 1/2 선 위`);
+  });
+  // 오른쪽 선언
+  const R0 = 510;
+  const st = hide(el('g'));
+  el('rect', { x: R0, y: 40, width: 360, height: 128, rx: 12, class: 'panel-soft' }, st);
+  el('text', { x: R0 + 22, y: 74, class: 'lbl', text: '리만가설 (1859년)' }, st);
+  el('text', { x: R0 + 22, y: 112, class: 'big', text: '중요한 영점은 전부' }, st);
+  el('text', { x: R0 + 22, y: 148, class: 'big', text: '1/2 선 위에 있다.' }, st);
+  // 반례 (가정)
+  const rogue = hide(el('g'));
+  const ry = ys(45);
+  el('line', { x1: xs(.2), x2: xs(.8), y1: ry, y2: ry, class: 'xhair' }, rogue);
+  el('circle', { cx: xs(.8), cy: ry, r: 7, class: 'dot-crit' }, rogue);
+  el('circle', { cx: xs(.2), cy: ry, r: 7, class: 'dot-crit' }, rogue);
+  el('text', { x: xs(.8) + 12, y: ry + 5, class: 'crittext', text: '✗ 만약?' }, rogue);
+  const rn = hide(el('g'));
+  el('text', { x: R0 + 22, y: 214, class: 'crittext', text: '✗ 선 밖에 하나라도 있으면 → 가설은 틀림' }, rn);
+  // 컴퓨터 확인
+  const ok = hide(el('g'));
+  el('text', { x: R0 + 22, y: 262, class: 'lbl', text: '컴퓨터로 확인한 영점' }, ok);
+  const cnt = el('text', { x: R0 + 22, y: 300, class: 'big', text: '0개' }, ok);
+  el('text', { x: R0 + 22, y: 330, class: 'goodtext', text: '✓ 전부 1/2 선 위' }, ok);
+  const inf = hide(el('text', { x: R0 + 22, y: 376, class: 'lbl-ink', text: '하지만 영점은 무한히 많아요 → 증명이 필요!' }));
+
+  await say('이제 리만가설을 말할 수 있어요: <b>“중요한 영점은 전부 1/2 선 위에 있다.”</b>');
+  await fadeIn(st, 600);
+  await wait(500);
+  await say('만약 선 밖에 영점이 <b>하나라도</b> 있다면(빨간 점) 리만가설은 틀린 거예요. 선 밖 영점은 거울처럼 짝으로 나와요.');
+  await fadeIn(rogue, 500); await fadeIn(rn, 400);
+  await wait(1400);
+  await fadeOut(rogue, 500);
+  await say('컴퓨터로 <b>10조 개 넘게</b> 확인했는데, 전부 선 위였어요.');
+  await fadeIn(ok, 400);
+  await tween(1800, p => cnt.textContent = fmt(Math.round(p * 10_000_000_000_000)) + (p === 1 ? '개 이상' : '개'), ease.out);
+  await wait(300);
+  await fadeIn(inf, 400);
+  await say('하지만 영점은 <b>끝없이</b> 많아서 아무리 세도 ‘전부’는 못 확인해요. 그래서 논리로 “예외가 절대 없다”를 보여야 하는데, <b>167년 동안</b> 아무도 못 했어요.');
+}
+
+/* 8. 영점 = 소수의 음표 */
+async function sceneWaves() {
+  const A = { L: 80, R: 860, T: 48, B: 372 };
+  const xs = lin(0, 40, A.L, A.R), ys = lin(-2, 44, A.B, A.T);
+  drawAxes(A, xs, ys, { xt: [0, 5, 10, 15, 20, 25, 30, 35, 40], yt: [0, 10, 20, 30, 40], xl: 'x →', yl: '소수 계단' });
+  // 실제 계단 ψ(x)
+  const steps = []; for (let n = 2; n <= 40; n++) { for (const p of PRIMES) { if (p > n) break; let q = p; while (q < n) q *= p; if (q === n) { steps.push([n, Math.log(p)]); break; } } }
+  const psiAt = x => steps.reduce((s, [n, l]) => s + (n <= x ? l : 0), 0);
+  let d = `M${xs(1.5)},${ys(0)}`, acc = 0;
+  steps.forEach(([n, l]) => { acc += l; d += `H${xs(n).toFixed(1)}V${ys(acc).toFixed(1)}`; }); d += `H${xs(40)}`;
+  const XS = []; for (let x = 1.5; x <= 40.0001; x += 0.02) XS.push(x);
+  function approx(x, N) {
+    let s = x - Math.log(2 * Math.PI) - 0.5 * Math.log(1 - 1 / (x * x));
+    const lx = Math.log(x), sx = Math.sqrt(x);
+    for (let k = 0; k < N; k++) { const g = ZEROS[k]; s -= sx * (Math.cos(g * lx) + 2 * g * Math.sin(g * lx)) / (0.25 + g * g); }
+    return s;
+  }
+  const Ns = [0, 1, 2, 5, 10, 30, 100];
+  const curves = {}; Ns.forEach(N => curves[N] = XS.map(x => approx(x, N)));
+  const cr = clipRect('clipW', A.L, A.T - 4, A.R - A.L, A.B - A.T + 4);
+  const stair = hide(el('path', { d, class: 'line-s1' }));
+  const wave = hide(el('path', { d: '', class: 'line-s2', 'clip-path': 'url(#clipW)' }));
+  let curN = 0, curArr = curves[0];
+  const draw = arr => wave.setAttribute('d', pathOf(XS.map((x, i) => [xs(x), ys(arr[i])])));
+  const nLabel = hide(el('text', { x: A.L + 14, y: A.T + 26, class: 'big', text: '사용한 영점: 0개' }));
+  const lg = hide(legend(A.L + 16, A.T + 56, [['실제 소수 계단', 'var(--s1)', 'line'], ['영점 파동들의 합', 'var(--s2)', 'line']]));
+  const xh = crosshair(A, xs, xv => {
+    if (xv < 1.5 || xv > 40) return null; const x = Math.round(xv * 10) / 10; const a = psiAt(x), b = approx(x, curN);
+    return { x, pts: [[xs(x), ys(a), 'var(--s1)'], [xs(x), ys(clamp(b, -2, 44)), 'var(--s2)']],
+      html: `x = <b>${x.toFixed(1)}</b><br><span class="sw" style="background:var(--s1)"></span>실제 계단: <b>${a.toFixed(2)}</b><br><span class="sw" style="background:var(--s2)"></span>영점 ${curN}개로 만든 값: <b>${b.toFixed(2)}</b>` };
+  });
+  await say('리만은 놀라운 공식을 찾았어요: <b>영점 하나하나가 ‘파동(음)’ 하나</b>가 되고, 그 파동을 모두 더하면 소수 계단이 그대로 만들어져요.');
+  await fadeIn(stair, 500); fadeIn(lg).catch(() => {});
+  await wait(300);
+  draw(curArr); await fadeIn(wave, 400); await fadeIn(nLabel, 300);
+  await say('영점을 0개 → 1개 → 10개 → 100개 쓸수록, 파동의 합이 계단에 <b>착 달라붙어요</b>.');
+  for (const N of Ns.slice(1)) {
+    const from = curArr, to = curves[N];
+    nLabel.textContent = `사용한 영점: ${N}개`;
+    await tween(1000, p => draw(from.map((v, i) => v + (to[i] - v) * p)));
+    curArr = to; curN = N;
+    await wait(650);
+  }
+  await say('영점이 모두 1/2 선 위에 있으면 파동들의 크기가 <b>딱 적당히 작게</b> 유지돼요 → 소수 개수 예측의 오차가 가장 작은 범위로 묶여요.');
+  await wait(500);
+  await say('그래서 수천 개의 수학 정리가 <b>“리만가설이 맞다면…”</b>으로 시작해요. <span style="color:var(--muted);font-size:14px">(※ 이 계단은 소수와 4, 8, 9 같은 소수의 거듭제곱에서 올라가고, 칸 높이가 수마다 조금씩 달라요)</span>');
+  svg.appendChild(xh);
+}
+
+/* 9. 진도표 */
+async function sceneProgress() {
+  const defs = el('defs');
+  const pat = el('pattern', { id: 'hatch', width: 8, height: 8, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' }, defs);
+  el('rect', { width: 8, height: 8, style: 'fill:var(--s2);opacity:.35' }, pat);
+  el('line', { x1: 0, y1: 0, x2: 0, y2: 8, style: 'stroke:var(--s2);stroke-width:4' }, pat);
+  const X0 = 80, X1 = 820, xs = lin(0, 100, X0, X1), BY = 78, BH = 32;
+  el('text', { x: X0, y: 34, class: 'lbl-ink', text: '1/2 선 위에 있다고 ‘증명된’ 영점의 비율 (최소)' });
+  el('rect', { x: X0, y: BY, width: X1 - X0, height: BH, rx: 4, style: 'fill:var(--cell)' });
+  [0, 25, 50, 75, 100].forEach(v => el('text', { x: xs(v), y: BY - 6, 'text-anchor': 'middle', class: 'tick', text: v + '%' }));
+  const segH = el('rect', { x: X0, y: BY, width: 0, height: BH, rx: 4, class: 'fill-s1' });
+  const segC = el('rect', { x: xs(41.6) + 2, y: BY, width: 0, height: BH, class: 'fill-s2' });
+  const segF = el('rect', { x: xs(67.2) + 2, y: BY, width: 0, height: BH, rx: 4, fill: 'url(#hatch)' });
+  const lg = legend(X0, BY + BH + 24, [['사람 수학자', 'var(--s1)', 'box'], ['Claude 참여', 'var(--s2)', 'box'], ['기계 검증 완료 · 사람 검토 중', '', 'hatch']]);
+  const rows = [
+    ['1859', '리만', '가설을 처음 제시', '—', null],
+    ['1914', '하디', '1/2 선 위 영점이 ‘무한히 많다’', '—', null],
+    ['1942', '셀베르그', '‘일정한 비율’ 이상이 선 위에 있다', '0% 초과', ['H', 2]],
+    ['1974', '레빈슨', '3분의 1 이상', '34%', ['H', 34]],
+    ['1989', '콘리', '5분의 2 이상', '40%', ['H', 40]],
+    ['이후', '여러 수학자', '조금씩 끌어올림 (이전 최고 기록)', '41.6%', ['H', 41.6]],
+    ['2026.8', 'Claude 연구용 모델', '기록 경신 — 리만가설 증명은 아님', '67.2%', ['C', 67.2]],
+    ['2026.11', '알푀게 + Claude', '전부 = 리만가설 증명 → Lean 검증 통과', '전부', ['F', 100]],
+  ];
+  const RY = 176, RS = 31;
+  const rowEls = rows.map((r, i) => {
+    const g = hide(el('g')); const y = RY + i * RS;
+    if (i % 2 === 0) el('rect', { x: X0 - 10, y: y - 20, width: X1 - X0 + 20, height: RS - 2, rx: 6, style: 'fill:var(--cell);opacity:.55' }, g);
+    el('text', { x: X0, y, class: 'lbl-b', text: r[0] }, g);
+    const sw = r[4] ? (r[4][0] === 'H' ? 'var(--s1)' : 'var(--s2)') : 'var(--muted)';
+    el('circle', { cx: X0 + 80, cy: y - 5, r: 5, style: `fill:${sw}` }, g);
+    el('text', { x: X0 + 92, y, class: 'lbl-ink', text: r[1] }, g);
+    el('text', { x: X0 + 250, y, class: 'lbl', text: r[2] }, g);
+    el('text', { x: X1, y, 'text-anchor': 'end', class: 'lbl-b', text: r[3] }, g);
+    return g;
+  });
+  const grow = (seg, x0, v1, ms = 900) => { const w0 = +seg.getAttribute('width'); const w1 = Math.max(0, xs(v1) - x0); return tween(ms, p => seg.setAttribute('width', w0 + (w1 - w0) * p)); };
+  await say('“1/2 선 위에 있는 영점이 <b>적어도 몇 %</b>냐”를 증명하는 경쟁이 100년 넘게 이어졌어요.');
+  for (let i = 0; i < rows.length; i++) {
+    if (i === 6) await say('2026년 8월, Anthropic의 연구용 Claude가 <b>67.2%</b>로 크게 올렸어요. 대단한 기록이지만 <b>리만가설 증명은 아니에요</b>. (그때 “Claude가 리만가설을 풀었다”는 기사는 과장이었어요)');
+    if (i === 7) await say('2026년 11월 20일, 수학자 <b>레벤트 알푀게</b>(Anthropic 소속)가 Claude와 함께 <b>리만가설 전체</b>를 증명했다고 발표했고, 다음 날 독립 검증을 통과했어요.');
+    await fadeIn(rowEls[i], 350);
+    const s = rows[i][4];
+    if (s) {
+      if (s[0] === 'H') await grow(segH, X0, s[1], 700);
+      if (s[0] === 'C') await grow(segC, xs(41.6) + 2, s[1], 1100);
+      if (s[0] === 'F') await grow(segF, xs(67.2) + 2, s[1], 1300);
+    }
+    await wait(i < 6 ? 380 : 700);
+    if (i === 5) await say('사람 수학자들이 약 50년 동안 34% → 41.6%까지 조금씩 올렸어요.');
+  }
+}
+
+/* 10. Lean 채점 로봇 */
+async function sceneLean() {
+  // 왼쪽 코드 창 (모양만 흉내 낸 그림)
+  const CX = 50, CY = 40, CW = 400, CH = 352;
+  el('rect', { x: CX, y: CY, width: CW, height: CH, rx: 12, class: 'panel' });
+  el('rect', { x: CX, y: CY, width: CW, height: 34, rx: 12, style: 'fill:var(--cell)' });
+  el('rect', { x: CX, y: CY + 22, width: CW, height: 12, style: 'fill:var(--cell)' });
+  el('text', { x: CX + 16, y: CY + 22, class: 'lbl', text: '증명 코드 (모양만 흉내 낸 그림)' });
+  const clip = clipRect('clipCode', CX + 2, CY + 36, CW - 4, CH - 40);
+  const lines = el('g', { 'clip-path': 'url(#clipCode)' });
+  const inner = el('g', {}, lines);
+  const scanY = CY + 36 + (CH - 40) * 0.55;
+  const NL = 60, LH = 22; const codeRows = [];
+  for (let i = 0; i < NL; i++) {
+    const y = CY + 56 + i * LH; const indent = [0, 16, 16, 32, 32, 16][i % 6]; const w = 80 + ((i * 53) % 160);
+    el('text', { x: CX + 14, y: y + 4, class: 'tick', text: String(i + 1).padStart(2, ' ') }, inner);
+    el('rect', { x: CX + 46 + indent, y: y - 6, width: w, height: 9, rx: 4, class: 'codebar' }, inner);
+    const ck = hide(el('text', { x: CX + CW - 84, y: y + 5, class: 'check', text: '✓' }, inner));
+    codeRows.push({ y, ck });
+  }
+  el('line', { x1: CX + 4, x2: CX + CW - 4, y1: scanY, y2: scanY, style: 'stroke:var(--good);stroke-width:2;opacity:.7' });
+  el('rect', { x: CX + CW - 64, y: scanY - 11, width: 56, height: 22, rx: 11, style: 'fill:var(--good)' });
+  el('text', { x: CX + CW - 36, y: scanY + 4, 'text-anchor': 'middle', style: 'fill:#fff;font-size:12px;font-weight:700', text: '검사 중' });
+  // 오른쪽
+  const RX = 490;
+  el('text', { x: RX, y: 64, class: 'lbl', text: '채점 로봇이 검사한 줄 수' });
+  const cnt = el('text', { x: RX, y: 106, class: 'big', text: '0줄' });
+  el('text', { x: RX, y: 132, class: 'tick', text: '모든 줄이 수학 규칙대로 앞 줄에서 나왔는지 확인' });
+  const checks = [
+    ['수십 명이 각자 돌려 봄 → 같은 결과'],
+    ['증명한 문장이 진짜 리만가설인지 대조'],
+    ['서로 다른 검사 프로그램 여러 개로 재채점'],
+  ].map(([t], i) => {
+    const g = hide(el('g')); const y = 166 + i * 52;
+    el('rect', { x: RX, y, width: 370, height: 42, rx: 10, style: 'fill:var(--cell)' }, g);
+    el('circle', { cx: RX + 22, cy: y + 21, r: 11, style: 'fill:var(--good)' }, g);
+    el('text', { x: RX + 22, y: y + 26, 'text-anchor': 'middle', style: 'fill:#fff;font-weight:800;font-size:13px', text: '✓' }, g);
+    el('text', { x: RX + 44, y: y + 26, class: 'lbl-ink', text: `${i + 1}. ${t}` }, g);
+    return g;
+  });
+  const verdict = hide(el('g'));
+  el('text', { x: RX, y: 348, class: 'goodtext', text: '✓ 통과 (2026년 11월 21일, Lean 커뮤니티 발표)' }, verdict);
+  el('text', { x: RX, y: 374, class: 'lbl', text: '“이 증명이 옳다고 완전히 확신한다”' }, verdict);
+
+  await say('이번 증명은 종이 논문이 아니라 <b>Lean</b>이라는 컴퓨터 언어로 쓰였어요. Lean은 증명의 모든 줄이 규칙대로인지 기계가 검사하는 <b>‘수학 채점 로봇’</b>이에요.');
+  await tween(5200, p => {
+    const off = -p * (NL * LH - (CH - 60)); inner.setAttribute('transform', `translate(0,${off})`);
+    codeRows.forEach(r => { if (r.y + off < scanY) r.ck.style.opacity = 1; });
+    cnt.textContent = fmt(Math.round(17_000_000 * p)) + '줄';
+  }, ease.io);
+  cnt.textContent = '약 1,700만 줄';
+  await say('코드 길이는 약 <b>1,700만 줄</b>. 사람이 다 읽기엔 너무 길지만, 로봇은 끝까지 검사할 수 있어요.');
+  await wait(400);
+  await say('독립된 사람들이 세 가지를 확인했어요.');
+  for (const c of checks) { await fadeIn(c, 400); await wait(450); }
+  await fadeIn(verdict, 500);
+  await wait(400);
+  await say('단, 로봇은 <b>“맞다”</b>는 알려주지만 <b>“왜 맞는지”</b>는 설명해 주지 않아요. 사람이 읽고 이해할 수 있는 설명은 <b>아직 없어요</b>.');
+}
+
+/* 11. 정리 */
+async function sceneSummary() {
+  htmlLayer.innerHTML = `
+  <div class="cards">
+    <div class="card good"><h3><span class="ico">✓</span>해결된 것</h3><ul>
+      <li><b>리만가설 자체</b>: “중요한 영점은 전부 1/2 선 위에 있다”</li>
+      <li>이걸 증명한 Lean 코드(약 1,700만 줄)가 <b>독립 검사를 통과</b>했어요</li>
+      <li>만든 사람: 수학자 <b>알푀게 + Claude</b>. 방향은 알푀게가 잡고, 어려운 기술 부분은 Claude가 많이 맡았어요</li>
+    </ul></div>
+    <div class="card wait"><h3><span class="ico">…</span>아직 남은 것</h3><ul>
+      <li><b>사람이 읽을 설명·논문</b>이 아직 없어요 (알푀게가 쓰겠다고 했어요)</li>
+      <li>학술지 심사 → 클레이 상금(100만 달러)은 <b>출판 후 2년</b>이 지나야 가능</li>
+      <li>더 넓은 문제(일반화 리만가설)도 풀었다는 주장은 <b>확인이 덜 됐어요</b></li>
+    </ul></div>
+    <div class="card bad"><h3><span class="ico">✗</span>흔한 오해</h3><ul>
+      <li>“Claude 혼자 풀었다” → <b>수학자와 함께</b></li>
+      <li>“8월에 이미 풀렸다” → 8월은 <b>67.2% 기록</b>(부분 결과)</li>
+      <li>“25만 쪽짜리 증명” → AI가 쓴 긴 초안 얘기. 공개된 건 <b>Lean 코드</b></li>
+      <li>“이제 인터넷 암호가 뚫린다” → <b>아니에요</b>. 이 증명은 큰 수를 소수로 쪼개는 방법을 주지 않아요</li>
+    </ul></div>
+  </div>
+  <p class="oneliner"><b>한 줄 요약:</b> 정답이 맞다는 건 채점 로봇이 확인했어요. 하지만 그 풀이를 사람이 이해하는 건 이제부터예요.</p>
+  <div class="sources">출처:
+    <a href="https://alpo.ge/remark.pdf" target="_blank" rel="noopener">알푀게 노트(원문)</a> ·
+    <a href="https://leanprover-community.github.io/blog/posts/riemann-hypothesis/" target="_blank" rel="noopener">Lean 커뮤니티 발표 (11/21)</a> ·
+    <a href="https://www.scientificamerican.com/article/the-ai-riemann-hypothesis-proof-is-almost-certainly-true-independent-mathematicians-attest/" target="_blank" rel="noopener">Scientific American (11/20)</a> ·
+    <a href="https://www.anthropic.com/research/riemann-zeta" target="_blank" rel="noopener">Anthropic 8월 발표</a> ·
+    <a href="https://scientificamerican.com/article/no-ai-didnt-just-solve-the-thorniest-problem-in-math" target="_blank" rel="noopener">Scientific American (8/12)</a> ·
+    <a href="https://phys.org/news/2026-11-anthropic-claude-math-greatest-riddle.html" target="_blank" rel="noopener">AFP/Phys.org (11/20)</a> ·
+    <a href="https://techcrunch.com/2026/11/20/ai-claimed-a-solution-to-the-167-year-old-riemann-hypothesis-and-a-human-did-too/" target="_blank" rel="noopener">TechCrunch (11/20)</a>
+  </div>`;
+  await say('정리해 볼게요.');
+  for (const c of htmlLayer.querySelectorAll('.card')) { c.classList.add('in'); await wait(700); }
+  htmlLayer.querySelector('.oneliner').classList.add('in');
+  await say('리만가설은 <b>컴퓨터 검증까지는 끝났고</b>, 수학자들이 그 증명을 <b>이해하는 일은 이제 시작</b>이에요.');
+}
+
+/* NEW: '1/2 위에 있다'는 게 무슨 뜻? — 제타 값 지도(히트맵) + 가로 이동 탐침 */
+const DARK = matchMedia('(prefers-color-scheme: dark)').matches;
+function heatImage() {
+  const H = HEAT, bytes = Uint8Array.from(atob(H.b64), c => c.charCodeAt(0));
+  const stops = DARK
+    ? [[0, '#1a1a19'], [.15, '#104281'], [.38, '#1c5cab'], [.62, '#3987e5'], [.85, '#86b6ef'], [1, '#cde2fb']]
+    : [[0, '#fcfcfb'], [.12, '#cde2fb'], [.35, '#86b6ef'], [.58, '#3987e5'], [.8, '#1c5cab'], [1, '#0d366b']];
+  const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const lut = [];
+  for (let q = 0; q < 256; q++) {
+    const lv = H.lo + q / 255 * (H.hi - H.lo), v = clamp((lv + 1.3) / 2.0, 0, 1); let k = 0; /* 표시 범위: |ζ| 0.05 ~ 5 */ while (k < stops.length - 2 && v > stops[k + 1][0]) k++;
+    const [a, ca] = stops[k], [b, cb] = stops[k + 1], f = (v - a) / (b - a);
+    const A = rgb(ca), B = rgb(cb); lut.push(A.map((x, i) => Math.round(x + (B[i] - x) * f)));
+  }
+  const cv = document.createElement('canvas'); cv.width = H.ns; cv.height = H.nt;
+  const ctx = cv.getContext('2d'), img = ctx.createImageData(H.ns, H.nt);
+  for (let j = 0; j < H.nt; j++) for (let i = 0; i < H.ns; i++) {
+    const q = bytes[j * H.ns + i], o = ((H.nt - 1 - j) * H.ns + i) * 4, c = lut[q];
+    img.data[o] = c[0]; img.data[o + 1] = c[1]; img.data[o + 2] = c[2]; img.data[o + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  const zetaAbs = (s, t) => {
+    const i = clamp(Math.round((s - H.s0) / (H.s1 - H.s0) * (H.ns - 1)), 0, H.ns - 1);
+    const j = clamp(Math.round((t - H.t0) / (H.t1 - H.t0) * (H.nt - 1)), 0, H.nt - 1);
+    return Math.pow(10, H.lo + bytes[j * H.ns + i] / 255 * (H.hi - H.lo));
+  };
+  return { url: cv.toDataURL(), zetaAbs };
+}
+
+async function sceneMeaning() {
+  const A = { L: 70, R: 430, T: 34, B: 394 };
+  const xs = lin(-1, 2, A.L, A.R), ys = lin(0, 40, A.B, A.T);
+  const { url, zetaAbs } = heatImage();
+  const g0 = hide(el('g'));
+  el('image', { href: url, x: A.L, y: A.T, width: A.R - A.L, height: A.B - A.T, preserveAspectRatio: 'none' }, g0);
+  el('rect', { x: A.L, y: A.T, width: A.R - A.L, height: A.B - A.T, fill: 'none', class: 'axis' }, g0);
+  [0, 1].forEach(v => el('line', { x1: xs(v), x2: xs(v), y1: A.T, y2: A.B, style: 'stroke:var(--ink2);stroke-width:1;opacity:.45' }, g0));
+  el('line', { x1: xs(.5), x2: xs(.5), y1: A.T, y2: A.B, class: 'critline', style: 'opacity:.55' }, g0);
+  [[-1, '−1'], [0, '0'], [.5, '1/2'], [1, '1'], [2, '2']].forEach(([v, s]) => el('text', { x: xs(v), y: A.B + 18, 'text-anchor': 'middle', class: 'tick', text: s }, g0));
+  [0, 10, 20, 30, 40].forEach(v => el('text', { x: A.L - 8, y: ys(v) + 4, 'text-anchor': 'end', class: 'tick', text: v }, g0));
+  el('text', { x: A.R, y: A.B + 36, 'text-anchor': 'end', class: 'lbl', text: '가로 →' }, g0);
+  el('text', { x: A.L, y: A.T - 12, class: 'lbl', text: '세로 ↑   (색 = 제타 값의 크기)' }, g0);
+  // hover: any point on the map
+  const hit = el('rect', { x: A.L, y: A.T, width: A.R - A.L, height: A.B - A.T, fill: 'transparent', class: 'hit' });
+  hit.addEventListener('pointermove', e => {
+    const p = svgPt(e), s = xs.inv(p.x), t = ys.inv(p.y), v = zetaAbs(s, t);
+    showTip(e, `넣은 점: 가로 <b>${s.toFixed(2)}</b>, 세로 <b>${t.toFixed(1)}</b><br>나온 값의 크기: <b>${v < 0.02 ? '≈ 0 (영점 근처!)' : v.toFixed(2)}</b>`);
+  });
+  hit.addEventListener('pointerleave', hideTip);
+
+  // right: the "zeta machine"
+  const M = hide(el('g'));
+  const box = (x, w, title) => { el('rect', { x, y: 62, width: w, height: 70, rx: 10, class: 'panel' }, M); el('text', { x: x + w / 2, y: 82, 'text-anchor': 'middle', class: 'tick', text: title }, M); };
+  box(462, 150, '넣는 점'); box(650, 76, ''); box(764, 116, '나온 값의 크기');
+  el('text', { x: 688, y: 104, 'text-anchor': 'middle', class: 'lbl-b', text: '제타' }, M);
+  el('text', { x: 688, y: 122, 'text-anchor': 'middle', class: 'tick', text: '기계' }, M);
+  el('text', { x: 631, y: 103, 'text-anchor': 'middle', class: 'lbl', text: '→' }, M);
+  el('text', { x: 745, y: 103, 'text-anchor': 'middle', class: 'lbl', text: '→' }, M);
+  const inTxt = el('text', { x: 537, y: 112, 'text-anchor': 'middle', class: 'lbl-ink', text: '가로 −0.50, 세로 14.13' }, M);
+  const outTxt = el('text', { x: 822, y: 114, 'text-anchor': 'middle', class: 'big', style: 'font-size:22px', text: '—' }, M);
+
+  // mini chart: |zeta| along height 14.13
+  const B2 = { L: 500, R: 870, T: 214, B: 370 };
+  const xs2 = lin(-0.5, 1.5, B2.L, B2.R), ys2 = lin(0, 1.3, B2.B, B2.T);
+  const g2 = hide(el('g'));
+  el('text', { x: B2.L, y: B2.T - 22, class: 'lbl-ink', text: '높이 14.13에서 가로로 이동하며 잰 값의 크기' }, g2);
+  [0, 0.5, 1].forEach(v => { el('line', { x1: B2.L, x2: B2.R, y1: ys2(v), y2: ys2(v), class: v === 0 ? 'axis-strong' : 'grid' }, g2); el('text', { x: B2.L - 8, y: ys2(v) + 4, 'text-anchor': 'end', class: 'tick', text: v }, g2); });
+  [[-.5, '−0.5'], [0, '0'], [.5, '1/2'], [1, '1'], [1.5, '1.5']].forEach(([v, s]) => el('text', { x: xs2(v), y: B2.B + 18, 'text-anchor': 'middle', class: 'tick', text: s }, g2));
+  el('line', { x1: xs2(.5), x2: xs2(.5), y1: B2.T, y2: B2.B, class: 'critline', style: 'opacity:.55' }, g2);
+  const P = HEAT.probe;
+  const cr = clipRect('clipProbe', B2.L - 4, B2.T - 4, 0, B2.B - B2.T + 8);
+  el('path', { d: pathOf(P.map((v, k) => [xs2(-0.5 + k * 0.01), ys2(v)])), class: 'line-s1', 'clip-path': 'url(#clipProbe)' }, g2);
+  const pdot2 = hide(el('circle', { r: 6, class: 'dot-s1' }, g2));
+  const zeroLbl = hide(el('text', { x: xs2(.5) + 10, y: ys2(0) - 10, class: 'lbl-b', text: '가로 0.5에서 딱 0!' }, g2));
+
+  // probe on the map
+  const tz = 14.134725;
+  const path = hide(el('line', { x1: xs(-.5), x2: xs(1.5), y1: ys(tz), y2: ys(tz), style: 'stroke:var(--ink);stroke-width:1.5;stroke-dasharray:4 4' }));
+  const pdot = hide(el('circle', { r: 7, style: 'fill:var(--s2);stroke:var(--surface);stroke-width:2' }));
+  const rings = ZEROS.filter(z => z < 40).map(z => {
+    const c = hide(el('circle', { cx: xs(.5), cy: ys(z), r: 12, style: 'fill:none;stroke:var(--ink);stroke-width:1.5' }));
+    const t = hide(el('text', { x: xs(.5) + 18, y: ys(z) + 4, class: 'lbl-ink', style: 'font-size:12px;font-weight:700', text: z < 15 ? '' : z.toFixed(2) }));
+    return { c, t, z };
+  });
+  const setProbe = s => {
+    const k = clamp(Math.round((s + 0.5) / 0.01), 0, 200), v = P[k];
+    pdot.setAttribute('cx', xs(s)); pdot.setAttribute('cy', ys(tz));
+    pdot2.setAttribute('cx', xs2(s)); pdot2.setAttribute('cy', ys2(v));
+    inTxt.textContent = `가로 ${s.toFixed(2)}, 세로 14.13`;
+    outTxt.textContent = v < 0.0005 ? '0' : v.toFixed(3);
+  };
+
+  await say('헷갈리기 쉬운 부분이에요! 제타 함수는 일종의 <b>‘기계’</b>예요. 지도 위의 점 하나(가로, 세로)를 넣으면 <b>값이 하나</b> 나와요.');
+  await fadeIn(M, 500);
+  await wait(400);
+  await say(`지도의 모든 점을 기계에 넣어 보고, 나온 값의 크기로 색을 칠했어요. <b>값이 0에 가까울수록 ${DARK ? '어둡게' : '밝게'}</b> 칠했더니 ${DARK ? '어두운' : '밝은'} 구멍들이 보여요. 이게 <b>영점</b>(나온 값 = 0)이에요.`);
+  await fadeIn(g0, 700);
+  for (const r of rings) { pop(r.c, xs(.5), ys(r.z), 300).catch(() => {}); fadeIn(r.t, 300).catch(() => {}); await wait(220); }
+  await wait(500);
+  await say('높이 14.13에서 점을 <b>가로로 쭉 옮기면서</b> 기계에 넣어 볼게요.');
+  await fadeIn(g2, 400);
+  path.style.opacity = 1; pdot.style.opacity = 1; pdot2.style.opacity = 1;
+  setProbe(-0.5);
+  await tween(5000, p => { const s = -0.5 + 2 * p; cr.setAttribute('width', xs2(s) - B2.L + 4); setProbe(s); }, ease.lin);
+  await tween(1200, p => setProbe(1.5 - 1.0 * p));
+  setProbe(0.5);
+  await fadeIn(zeroLbl, 300);
+  await say('값이 0이 되는 곳은 <b>가로 = 0.5</b> 딱 한 곳이에요. 다른 높이의 구멍들도 전부 가로 0.5에 있어요.');
+  await wait(500);
+  await say('그래서 “영점이 1/2 위에 있다”는 <b>제타 함수가 1/2 위에 있다는 게 아니라</b>, 제타 값을 0으로 만드는 <b>입력 점들의 가로 좌표가 전부 정확히 1/2</b>이라는 뜻이에요.');
+}
+
+/* NEW: 왜 하필 1/2? — 영점의 가로 좌표 = 파동이 커지는 속도 */
+async function sceneWhyHalf() {
+  const A = { L: 80, R: 600, T: 44, B: 372 };
+  const xs = lin(0, 10000, A.L, A.R), ys = lin(0, 1800, A.B, A.T);
+  drawAxes(A, xs, ys, { xt: [0, 2500, 5000, 7500, 10000], xf: v => fmt(v), yt: [0, 500, 1000, 1500], yf: v => fmt(v), xl: 'x (어디까지 셀까?)', yl: '영점 하나가 만드는 파동의 크기 (대략)' });
+  const half = [], p8 = [];
+  for (let x = 0; x <= 10000; x += 50) { half.push([xs(x), ys(Math.sqrt(x))]); p8.push([xs(x), ys(Math.pow(x, 0.8))]); }
+  const c1 = clipRect('clipH1', A.L - 2, A.T - 10, 0, A.B - A.T + 20);
+  const c2 = clipRect('clipH2', A.L - 2, A.T - 10, 0, A.B - A.T + 20);
+  el('path', { d: pathOf(half), class: 'line-s1', 'clip-path': 'url(#clipH1)' });
+  el('path', { d: pathOf(p8), class: 'line-s2', 'clip-path': 'url(#clipH2)' });
+  const l1 = hide(el('text', { x: A.R - 4, y: ys(100) - 12, 'text-anchor': 'end', class: 'lbl-ink', text: '가로 1/2인 영점 → √x (1만에서 100)' }));
+  const l2 = hide(el('text', { x: A.R - 4, y: ys(1585) + 24, 'text-anchor': 'end', class: 'lbl-ink', text: '가로 0.8인 영점이 있다면(가정) → 1,585' }));
+  const lg = hide(legend(A.L + 14, A.T + 22, [['가로 1/2인 영점', 'var(--s1)', 'line'], ['가로 0.8인 영점 (가정)', 'var(--s2)', 'line']]));
+  const xh = crosshair(A, xs, xv => {
+    if (xv < 0 || xv > 10000) return null; const x = Math.round(xv / 50) * 50; const a = Math.sqrt(x), b = Math.pow(x, 0.8);
+    return { x, pts: [[xs(x), ys(a), 'var(--s1)'], [xs(x), ys(b), 'var(--s2)']],
+      html: `x = <b>${fmt(x)}</b><br><span class="sw" style="background:var(--s1)"></span>가로 1/2 → <b>${Math.round(a)}</b><br><span class="sw" style="background:var(--s2)"></span>가로 0.8 → <b>${fmt(Math.round(b))}</b>` };
+  });
+  // mirror diagram
+  const D = { L: 650, R: 860, T: 70, B: 360 };
+  const dx = lin(0, 1, D.L, D.R);
+  const gD = hide(el('g'));
+  el('text', { x: D.L, y: D.T - 20, class: 'lbl-ink', text: '영점은 거울 짝으로 나와요' }, gD);
+  el('rect', { x: D.L, y: D.T, width: D.R - D.L, height: D.B - D.T, class: 'strip' }, gD);
+  el('line', { x1: dx(.5), x2: dx(.5), y1: D.T, y2: D.B, class: 'critline' }, gD);
+  [[0, '0'], [.2, '0.2'], [.5, '1/2'], [.8, '0.8'], [1, '1']].forEach(([v, s]) => el('text', { x: dx(v), y: D.B + 18, 'text-anchor': 'middle', class: 'tick', text: s }, gD));
+  [110, 160, 250, 300].forEach(y => el('circle', { cx: dx(.5), cy: y, r: 6, class: 'dot-s1' }, gD));
+  const yy = 205;
+  el('line', { x1: dx(.2), x2: dx(.8), y1: yy, y2: yy, class: 'xhair' }, gD);
+  el('circle', { cx: dx(.2), cy: yy, r: 7, style: 'fill:var(--s2);stroke:var(--surface);stroke-width:2' }, gD);
+  el('circle', { cx: dx(.8), cy: yy, r: 7, style: 'fill:var(--s2);stroke:var(--surface);stroke-width:2' }, gD);
+  el('text', { x: dx(.2), y: yy - 14, 'text-anchor': 'middle', class: 'tick', text: '작은 파동' }, gD);
+  el('text', { x: dx(.8), y: yy - 14, 'text-anchor': 'middle', class: 'tick', text: '큰 파동' }, gD);
+  el('text', { x: (D.L + D.R) / 2, y: D.B + 40, 'text-anchor': 'middle', class: 'tick', text: '(주황 점 = 만약 있다면, 가정)' }, gD);
+
+  await say('영점의 <b>가로 좌표</b>에는 진짜 의미가 있어요. 그 영점이 만드는 파동이 <b>얼마나 빨리 커지는지</b>를 정해요. 가로가 a인 영점의 파동은 대략 <b>x의 a제곱</b>만큼 커져요.');
+  fadeIn(lg).catch(() => {});
+  await tween(2200, p => c1.setAttribute('width', p * (A.R - A.L + 4)), ease.io);
+  await fadeIn(l1, 300);
+  await say('가로 1/2 → 파동 크기는 대략 <b>√x</b>. x가 1만이면 약 <b>100</b>이에요.');
+  await wait(400);
+  await tween(2200, p => c2.setAttribute('width', p * (A.R - A.L + 4)), ease.io);
+  await fadeIn(l2, 300);
+  await say('만약 가로 0.8인 영점이 <b>하나라도</b> 있다면 → 대략 x<sup>0.8</sup>. x가 1만이면 약 <b>1,585</b>로 훨씬 커요. 소수 개수 예측의 오차도 그만큼 커져요.');
+  await wait(500);
+  await fadeIn(gD, 500);
+  await say('그런데 영점은 1/2을 기준으로 <b>거울 짝</b>으로 나와요(0.8이 있으면 0.2도 있어요). 짝 중 큰 쪽이 오차를 키우니까, <b>전부 정확히 1/2 위에 있을 때가 오차가 가장 작은 경우</b>예요.');
+  await wait(500);
+  await say('그래서 “영점이 전부 1/2 위에 있다” = “소수 개수 예측의 오차가 가능한 한 가장 작다”. <b>같은 말</b>이에요.');
+  svg.appendChild(xh);
+}
+
+/* ---------- scene runner ---------- */
+const SCENES = [
+  { t: '리만가설, 도대체 뭐가 풀린 걸까?', f: sceneCover, html: true },
+  { t: '① 소수: 수의 원자', f: scenePrimes },
+  { t: '② 소수는 제멋대로 나타나요', f: sceneScatter },
+  { t: '③ 그래도 ‘개수’는 예측할 수 있어요', f: sceneCount },
+  { t: '④ 리만의 도구: 제타 함수', f: sceneZeta },
+  { t: '⑤ 지도 위의 ‘0이 되는 점’ (영점)', f: scenePlane },
+  { t: '⑥ ‘영점이 1/2 위에 있다’는 게 무슨 뜻?', f: sceneMeaning },
+  { t: '⑦ 1/2 선을 따라 걸으며 영점 찾기', f: sceneWalk },
+  { t: '⑧ 리만가설: 영점은 전부 한 줄 위에?', f: sceneRH },
+  { t: '⑨ 왜 중요할까? 영점은 소수의 ‘음표’', f: sceneWaves },
+  { t: '⑩ 왜 하필 1/2일까?', f: sceneWhyHalf },
+  { t: '⑪ 167년 동안의 진도표', f: sceneProgress },
+  { t: '⑫ 이번엔 ‘채점 로봇’이 검사했어요', f: sceneLean },
+  { t: '⑬ 그래서 정확히 뭐가 풀렸나?', f: sceneSummary, html: true },
+];
+let cur = 0, auto = false;
+const dotsBox = document.getElementById('dots');
+SCENES.forEach((s, i) => { const b = document.createElement('button'); b.className = 'dot'; b.title = s.t; b.setAttribute('aria-label', s.t); b.onclick = () => go(i); dotsBox.appendChild(b); });
+const prevBtn = document.getElementById('prev'), nextBtn = document.getElementById('next'), autoBtn = document.getElementById('auto');
+async function go(i) {
+  if (i < 0 || i >= SCENES.length) return;
+  token++; cur = i; hideTip();
+  const s = SCENES[i];
+  svg.innerHTML = ''; htmlLayer.innerHTML = ''; caps.innerHTML = '';
+  stage.classList.toggle('html-mode', !!s.html);
+  document.getElementById('title').textContent = s.t;
+  document.getElementById('step').textContent = i === 0 ? '표지' : `${i} / ${SCENES.length - 1}`;
+  [...dotsBox.children].forEach((d, k) => d.classList.toggle('on', k === i));
+  prevBtn.disabled = i === 0; nextBtn.disabled = i === SCENES.length - 1;
+  try {
+    await s.f();
+    if (auto && cur < SCENES.length - 1) { await wait(3200); go(cur + 1); }
+  } catch (e) { if (e !== CANCEL) console.error(e); }
+}
+prevBtn.onclick = () => go(cur - 1);
+nextBtn.onclick = () => go(cur + 1);
+document.getElementById('replay').onclick = () => go(cur);
+autoBtn.onclick = () => {
+  auto = !auto; autoBtn.classList.toggle('on', auto); autoBtn.textContent = auto ? '⏸ 자동 재생 중' : '▶ 자동 재생';
+  if (auto) go(cur);
+};
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') go(cur + 1);
+  else if (e.key === 'ArrowLeft') go(cur - 1);
+});
+go(+(location.hash.slice(1)) || 0);
+</script>
+</body>
+</html>
